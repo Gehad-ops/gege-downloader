@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://getgege.app">Download</a> ·
+  <a href="https://github.com/Gehad-ops/gege-downloader/releases/latest">Download</a> ·
   <a href="#features">Features</a> ·
   <a href="#troubleshooting">Troubleshooting</a> ·
   <a href="#how-it-works">How it works</a> ·
@@ -23,8 +23,6 @@
   <a href="https://github.com/Gehad-ops/gege-downloader/actions/workflows/ci.yml"><img src="https://github.com/Gehad-ops/gege-downloader/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI status"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/Gehad-ops/gege-downloader" alt="MIT license"></a>
 </p>
-
-
 
 https://github.com/user-attachments/assets/e57728f4-fb63-441f-839c-174eef954b17
 
@@ -44,7 +42,7 @@ https://github.com/user-attachments/assets/e57728f4-fb63-441f-839c-174eef954b17
 ### Browser integration
 
 - Capture downloads or send individual links to Gege Downloader
-- Download files using your browser’s authenticated session
+- Download files using your browser's authenticated session
 - Exclude websites and skip small files
 
 ### Download management
@@ -66,7 +64,7 @@ https://github.com/user-attachments/assets/e57728f4-fb63-441f-839c-174eef954b17
 
 ## Troubleshooting
 
-If your problem isn't covered here, [open an issue](https://github.com/Gehad-ops/gege/issues).
+If your problem isn't covered here, [open an issue](https://github.com/Gehad-ops/gege-downloader/issues).
 
 <details>
 <summary><strong>Windows says "Windows protected your PC"</strong></summary>
@@ -104,7 +102,7 @@ Gege Downloader can use any connection your operating system shows as a network 
 
 If Windows turns Wi-Fi off when Ethernet is plugged in, open the Group Policy Editor (`gpedit.msc`), go to _Computer Configuration_ › _Administrative Templates_ › _Network_ › _Windows Connection Manager_, and set **Minimize the number of simultaneous connections to the Internet or a Windows domain** to **Disabled**.
 
-If both stay connected but one sits idle in Gege Downloader, Windows may be sending its traffic out the other network. Add your setup to [#65](https://github.com/Gehad-ops/gege/issues/65).
+If both stay connected but one sits idle in Gege Downloader, Windows may be sending its traffic out the other network. Add your setup to [#65](https://github.com/Gehad-ops/gege-downloader/issues/65).
 
 </details>
 
@@ -141,7 +139,7 @@ Thanks to [@XiaoMiku01](https://github.com/XiaoMiku01) for building and open-sou
 
 Gege Downloader downloads different parts of the same file through each internet connection you select, then assembles them on disk.
 
-For direct downloads, Gege Downloader uses HTTP range requests to fetch chunks in parallel. Streams take new chunks from a shared queue as they finish, so faster connections handle more of the file. Gege Downloader adjusts stream counts to network, server and disk performance. Near the end, idle streams can race slow chunks; the first to finish wins. Servers without range support use a single stream.
+For direct downloads, Gege Downloader uses HTTP range requests to fetch chunks in parallel. Streams take new chunks from a shared queue as they finish, so faster connections handle more of the download. Gege Downloader adjusts stream counts to network, server and disk performance. Near the end, idle streams can race slow chunks; the first to finish wins. Servers without range support use a single stream.
 
 For torrents, Gege Downloader distributes peer connections across your selected networks. New peers connect through the network with the fewest peers.
 
@@ -152,8 +150,8 @@ Each network needs its own internet connection to add bandwidth. Gege Downloader
 You need Node.js 22.13 or later and npm 9 or later.
 
 ```bash
-git clone https://github.com/Gehad-ops/gege.git
-cd gege
+git clone https://github.com/Gehad-ops/gege-downloader.git
+cd gege-downloader
 npm ci
 npm run dev
 ```
@@ -172,10 +170,10 @@ Run platform packaging commands on the corresponding operating system. Local bui
 
 ## Contributing
 
-Start with [open issues](https://github.com/Gehad-ops/gege/issues), or contribute a reproducible bug report, a fix, network compatibility testing or documentation improvements.
+Start with [open issues](https://github.com/Gehad-ops/gege-downloader/issues), or contribute a reproducible bug report, a fix, network compatibility testing or documentation improvements.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, required checks and pull request guidance. For a substantial feature, [open an issue](https://github.com/Gehad-ops/gege/issues/new) to discuss the approach before implementing it.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, required checks and pull request guidance. For a substantial feature, [open an issue](https://github.com/Gehad-ops/gege-downloader/issues/new) to discuss the approach before implementing it.
 
 ## License
 
-[MIT](LICENSE), copyright 2026 Anmol Kapil.
+[MIT](LICENSE), copyright 2026 Gehad-ops.
