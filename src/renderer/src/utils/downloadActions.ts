@@ -6,6 +6,8 @@ import { linkExpired } from './format'
  * they can't disagree about what is offered, when, or in what order. How an action is named,
  * drawn and confirmed is in components/downloadActionMeta.ts and DownloadActionsProvider.tsx. */
 export type ActionId =
+  | 'moveUp'
+  | 'moveDown'
   | 'pause'
   | 'resume'
   | 'retry'
@@ -48,6 +50,8 @@ export function failureAction(download: DownloadState): FailureAction {
 }
 
 const appliesTo: Record<ActionId, (item: DownloadItem) => boolean> = {
+  moveUp: (item) => !isFinished(item) && item.status === 'queued',
+  moveDown: (item) => !isFinished(item) && item.status === 'queued',
   pause: (item) => !isFinished(item) && (item.status === 'downloading' || item.status === 'queued'),
   resume: (item) => !isFinished(item) && item.status === 'paused',
   retry: (item) => isFailed(item) && failureAction(item) === 'retry',
@@ -62,11 +66,19 @@ const appliesTo: Record<ActionId, (item: DownloadItem) => boolean> = {
 }
 
 /** These make sense for one download at a time: with several selected, they aren't offered. */
-const SINGLE_ONLY: ReadonlySet<ActionId> = new Set(['fix', 'again', 'open', 'reveal'])
+const SINGLE_ONLY: ReadonlySet<ActionId> = new Set([
+  'moveUp',
+  'moveDown',
+  'fix',
+  'again',
+  'open',
+  'reveal'
+])
 
-/** The order they're shown in, in groups: what to do with it, its link, getting rid of it.
- * Menus put a separator between groups. */
+/** The order they're shown in, in groups: the queue's order, then what to do with it, its link,
+ * getting rid of it. Menus put a separator between groups. */
 export const ACTION_GROUPS: readonly (readonly ActionId[])[] = [
+  ['moveUp', 'moveDown'],
   ['pause', 'resume', 'retry', 'fix', 'again', 'open', 'reveal'],
   ['copy'],
   ['cancel', 'remove', 'trash']
@@ -106,7 +118,9 @@ export const TOOLBAR_PRIORITY: readonly ActionId[] = [
   'reveal',
   'remove',
   'trash',
-  'copy'
+  'copy',
+  'moveUp',
+  'moveDown'
 ]
 
 /** How many go on the toolbar as buttons. */

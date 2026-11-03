@@ -1,19 +1,15 @@
 import type { SpeedUnit } from '@shared/types'
-import { useEffect, useState } from 'react'
-import { useAppStore } from '../store/useAppStore'
-import { formatBytes } from '../utils/format'
-import { useFormatSpeedLimit } from '../hooks/useFormatSpeed'
+import { cn } from 'cn'
+import { useFormatSpeed, useFormatSpeedLimit } from '../hooks/useFormatSpeed'
 import { useDownloadSchedule } from '../hooks/useDownloadSchedule'
-import { ScreenFooter } from './ScreenFooter'
+import { useAppStore } from '../store/useAppStore'
 import { ThemeToggle } from './ThemeToggle'
 import { Switch } from './ui/switch'
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 import { UpdateIndicator } from './UpdateIndicator'
 
-const FREE_SPACE_POLL_MS = 30_000
-
-/** MB/s or Mbps for every speed in the app; sits with the theme toggle as a view preference. */
+/** MB/s or Mbps for every speed in the app; a view preference, so it lives in the footer. */
 function SpeedUnitToggle(): React.JSX.Element {
   const speedUnit = useAppStore((store) => store.speedUnit)
   const setSpeedUnit = useAppStore((store) => store.setSpeedUnit)
@@ -30,13 +26,13 @@ function SpeedUnitToggle(): React.JSX.Element {
             }}
             size="xs"
             spacing={0.5}
-            className="h-[26px] rounded-[6px] border-[0.5px] border-border p-0.5 [-webkit-app-region:no-drag]"
+            className="h-7 rounded-[8px] border border-[var(--card-border)] bg-[var(--card)] p-0.5 [-webkit-app-region:no-drag]"
           >
             {(['bytes', 'bits'] as const).map((unit) => (
               <ToggleGroupItem
                 key={unit}
                 value={unit}
-                className="h-full rounded-[4px] px-1.5 font-mono text-[11px] font-medium text-muted-foreground aria-pressed:bg-background aria-pressed:text-foreground"
+                className="h-full rounded-[6px] px-2 font-mono text-[11px] font-medium text-[var(--text-secondary)] aria-pressed:bg-[var(--bg-tertiary)] aria-pressed:text-[var(--text)]"
               >
                 {unit === 'bytes' ? 'MB/s' : 'Mbps'}
               </ToggleGroupItem>
@@ -49,51 +45,53 @@ function SpeedUnitToggle(): React.JSX.Element {
   )
 }
 
-/** Along the bottom of every screen: the room left where downloads are saved, the queue, the
- * slow mode switch, and view preferences. Speeds and their limits are left to the screens that
- * show them — repeated down here they only doubled up, or read as a limit with no cause. */
+/** Along the bottom of the window: what is moving now, and the set-once view preferences. */
 export function StatusBar(): React.JSX.Element {
+  const formatSpeed = useFormatSpeed()
   const formatSpeedLimit = useFormatSpeedLimit()
   const { message } = useDownloadSchedule()
-  // A count, not the downloads: progress ticks don't re-render the footer.
-  const waiting = useAppStore(
-    (store) =>
-      Object.values(store.downloads).filter((download) => download.status === 'queued').length
+  const active = useAppStore(
+    (store) => Object.values(store.downloads).filter((d) => d.status === 'downloading').length
+  )
+  const totalSpeed = useAppStore((store) =>
+    Object.values(store.downloads).reduce(
+      (sum, download) =>
+        sum +
+        (download.status === 'downloading'
+          ? download.networks.reduce(
+              (networkSum, network) => networkSum + network.speedBytesPerSec,
+              0
+            )
+          : 0),
+      0
+    )
   )
   const slowMode = useAppStore((store) => store.slowMode)
   const slowModeSpeed = useAppStore((store) => store.slowModeSpeed)
   const setSlowMode = useAppStore((store) => store.setSlowMode)
-  const destinationDir = useAppStore((store) => store.destinationDir)
-  const [free, setFree] = useState<number | null>(null)
-
-  useEffect(() => {
-    let disposed = false
-    const load = (): void => {
-      void window.plexo
-        .freeSpace(destinationDir)
-        .then((bytes) => !disposed && setFree(bytes))
-        .catch(() => {})
-    }
-    load()
-    const interval = setInterval(load, FREE_SPACE_POLL_MS)
-    return () => {
-      disposed = true
-      clearInterval(interval)
-    }
-  }, [destinationDir])
-
-  // Limits show by the speeds they cap (the Downloading screen, the networks menu), not here.
-  const status = [
-    free !== null && `${formatBytes(free)} free`,
-    waiting > 0 && `${waiting} waiting`
-  ].filter(Boolean)
 
   return (
-    <ScreenFooter className="gap-4 font-mono text-[11.5px] text-muted-foreground">
-      <span className="min-w-0 flex-1 truncate tabular-nums">{status.join(' · ')}</span>
-      {message && <span className="truncate">{message}</span>}
-      {/* Controls, most-flipped first: the edge holds the set-once view preferences. */}
-      <div className="flex shrink-0 items-center gap-3">
+    <footer className="flex h-10 shrink-0 items-center justify-between gap-4 border-t border-[var(--border-subtle)] bg-[var(--panel)] px-[18px] text-[12px] text-[var(--text-secondary)]">
+      <div className="flex min-w-0 items-center gap-2">
+        <span
+          aria-hidden
+          className={cn(
+            'size-2 shrink-0 rounded-full',
+            active > 0 ? 'live-dot' : 'bg-[var(--text-tertiary)]'
+          )}
+        />
+        <span className="truncate">
+          {active > 0 ? `${active} active · ${formatSpeed(totalSpeed)}` : 'No active downloads'}
+        </span>
+        {message && (
+          <>
+            <span className="text-[var(--text-tertiary)]">·</span>
+            <span className="truncate text-[var(--text-tertiary)]">{message}</span>
+          </>
+        )}
+      </div>
+
+      <div className="flex shrink-0 items-center gap-4">
         <UpdateIndicator />
         <Tooltip>
           <TooltipTrigger
@@ -109,6 +107,6 @@ export function StatusBar(): React.JSX.Element {
         <SpeedUnitToggle />
         <ThemeToggle />
       </div>
-    </ScreenFooter>
+    </footer>
   )
 }

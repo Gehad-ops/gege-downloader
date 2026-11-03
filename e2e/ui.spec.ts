@@ -306,14 +306,14 @@ test.describe('settings @smoke', () => {
     // A function: the window, and so the page, is a new one after a relaunch.
     const networksMenu = (): Locator =>
       page()
-        .getByRole('button', { name: /network/ })
+        .getByRole('button', { name: /^Networks$/ })
         .first()
         .first()
     await networksMenu().click()
     await page().getByRole('button', { name: 'Edit network' }).first().click()
     await page().getByRole('textbox', { name: 'Name' }).fill('Office fibre')
     await page().getByRole('button', { name: 'Violet' }).click()
-    await page().getByRole('button', { name: 'Done' }).click()
+    await page().getByRole('button', { name: 'Done', exact: true }).click()
     await page().keyboard.press('Escape')
 
     const expectAllKept = async (): Promise<void> => {

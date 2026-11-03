@@ -3,8 +3,10 @@ import type {
   DownloadUpdate,
   FinishedDownload,
   NetworkInterfaceInfo,
+  PageLinks,
   PendingLink,
   ProbeResult,
+  ResolvedLinks,
   StartDownloadRequest,
   TorrentFileEntry,
   UpdateState
@@ -21,6 +23,12 @@ export interface IpcContract {
   openNetworkSettings: { args: []; result: void }
   updateSettings: { args: [patch: AppSettings]; result: void }
   probeUrl: { args: [url: string]; result: ProbeResult }
+  /** Opens a URL and returns the real download link(s) inside it, or the file itself. */
+  resolveLinks: { args: [url: string]; result: ResolvedLinks }
+  /** Deep link analysis: crawls from a URL and returns every file it reaches. */
+  deepResolve: { args: [url: string]; result: ResolvedLinks }
+  /** Reads a web page's links and media, for "Download all links". */
+  extractLinks: { args: [url: string]; result: PageLinks }
   chooseDestinationFolder: { args: [defaultPath: string]; result: string | null }
   chooseTorrentFile: { args: []; result: string | null }
   readClipboardText: { args: []; result: string }
@@ -43,6 +51,8 @@ export interface IpcContract {
   resetNetworkUsage: { args: [id: string]; result: void }
   /** Bytes free on the drive holding `dir`; null when it can't be told. */
   freeSpace: { args: [dir: string]; result: number | null }
+  /** Bytes free and in total on the drive holding `dir`; null when it can't be told. */
+  diskSpace: { args: [dir: string]; result: { free: number; total: number } | null }
   /** A torrent download's files, in the torrent's order; empty for any other download. */
   torrentFiles: { args: [id: string]; result: TorrentFileEntry[] }
   /** Which of a torrent download's files to fetch, by index, as it runs or not. Refused for one
@@ -50,6 +60,8 @@ export interface IpcContract {
   chooseTorrentFiles: { args: [id: string, selected: number[]]; result: void }
   pauseDownload: { args: [id: string]; result: void }
   resumeDownload: { args: [id: string]; result: void }
+  /** Moves a queued download one place up or down the queue. */
+  moveDownload: { args: [id: string, direction: 'up' | 'down']; result: void }
   /** A fresh link to the same file, for a download whose link stopped working; it resumes. */
   relinkDownload: { args: [id: string, url: string]; result: void }
   setDownloadNetwork: { args: [id: string, networkId: string, enabled: boolean]; result: void }

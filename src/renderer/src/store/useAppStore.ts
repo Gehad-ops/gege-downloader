@@ -8,13 +8,70 @@ import type {
   NetworkInterfaceInfo,
   NetworkPreference,
   NetworkPreferences,
+  NetworkMode,
+  OnDownloadComplete,
   PendingLink,
+  ProbeResult,
   SpeedUnit,
-  ThemeSource
+  ThemeSource,
+  WhenQueueFinishes
 } from '@shared/types'
 import { create } from 'zustand'
+import { fileNameFromPath, sourceOf } from '../utils/format'
 
 export type DownloadFilter = 'all' | 'progress' | 'finished' | 'failed'
+
+/** Which main tab is shown, as a download manager has: collect in the LinkGrabber, then start. */
+export type MainTab = 'downloads' | 'grabber'
+
+/** One link the LinkGrabber has collected: checked (probed), but not started yet. */
+export interface GrabberLink {
+  id: string
+  url: string
+  fileName: string
+  host: string
+  /** Null until the probe answers, or when the server didn't say. */
+  totalBytes: number | null
+  status: 'checking' | 'ready' | 'error'
+  error?: string
+  /** What the probe found, kept so starting it needs no second check. */
+  probe?: ProbeResult
+}
+
+/** The column the LinkGrabber's queue is ordered by. Sorting reorders the queue itself, so the
+ * order shown is the order links download in. */
+export type GrabberSortKey = 'name' | 'size' | 'host' | 'status'
+export interface GrabberSort {
+  key: GrabberSortKey
+  descending: boolean
+}
+
+/** Orders collected links by one column, leaving the given array alone. */
+function sortGrabberLinks(links: GrabberLink[], { key, descending }: GrabberSort): GrabberLink[] {
+  const value = (link: GrabberLink): number | string =>
+    key === 'name'
+      ? link.fileName.toLowerCase()
+      : key === 'host'
+        ? link.host.toLowerCase()
+        : key === 'status'
+          ? link.status
+          : (link.totalBytes ?? 0)
+  return [...links].sort((left, right) => {
+    const a = value(left)
+    const b = value(right)
+    const order = typeof a === 'string' ? a.localeCompare(b as string) : a - (b as number)
+    return descending ? -order : order
+  })
+}
+
+/** What a download is by its file type, as IDM groups its list. `other` is the fallback: an
+ * unknown extension, no extension, or a torrent's folder (which has none to read). */
+export type DownloadCategory =
+  'all' | 'video' | 'audio' | 'images' | 'documents' | 'archives' | 'programs' | 'other'
+
+/** How the list is ordered inside each group. `default` keeps the order the app already uses
+ * (oldest first while running, newest first once finished), so nothing moves until asked. */
+export type DownloadSort = 'default' | 'name' | 'size' | 'date'
 
 type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
 
@@ -41,6 +98,31 @@ interface AppStore {
   view: View
   downloadFilter: DownloadFilter
   setDownloadFilter: (filter: DownloadFilter) => void
+  /** Narrows the list to one kind of file; `all` shows every kind. */
+  downloadCategory: DownloadCategory
+  setDownloadCategory: (category: DownloadCategory) => void
+  /** Orders each group; view state like downloadFilter, so it resets on reload. */
+  downloadSort: DownloadSort
+  setDownloadSort: (sort: DownloadSort) => void
+  /** Free text matched against a download's name, link and host. */
+  downloadSearch: string
+  setDownloadSearch: (search: string) => void
+  /** Which main tab is shown. */
+  mainTab: MainTab
+  setMainTab: (tab: MainTab) => void
+  /** Links collected by the LinkGrabber, oldest first. */
+  grabber: GrabberLink[]
+  /** How the queue is ordered, or null for the order links were added in. */
+  grabberSort: GrabberSort | null
+  /** Reorders the queue itself by a column; null restores the added order. */
+  setGrabberSort: (sort: GrabberSort | null) => void
+  /** Adds links and probes each; an entry is `checking` until its probe answers. */
+  addToGrabber: (urls: string[]) => void
+  removeFromGrabber: (ids: string[]) => void
+  clearGrabber: () => void
+  /** Moves a collected link one place up or down the grabber's order, which hands the queue
+   * back to manual order (any column sort is dropped). */
+  moveGrabberLink: (id: string, direction: 'up' | 'down') => void
   downloadSchedule: DownloadSchedule | undefined
   /** The New download dialog, over whatever the window shows. */
   newDownloadOpen: boolean
@@ -52,6 +134,11 @@ interface AppStore {
   slowModeSpeed: number
   /** Persisted — MB/s or Mbps, for every speed shown. */
   speedUnit: SpeedUnit
+  /** Persisted — what happens after each download finishes, and once the queue empties. */
+  onDownloadComplete: OnDownloadComplete
+  whenQueueFinishes: WhenQueueFinishes
+  /** Persisted — combine the picked networks on one download, or alternate one per download. */
+  networkMode: NetworkMode
 
   /** Lifted out of the Idle screen so it survives a swap to/from the No-connections screen. */
   draftUrl: string
@@ -94,6 +181,9 @@ interface AppStore {
   setSlowMode: (on: boolean) => void
   setSlowModeSpeed: (bytesPerSec: number) => void
   setSpeedUnit: (unit: SpeedUnit) => void
+  setOnDownloadComplete: (value: OnDownloadComplete) => void
+  setWhenQueueFinishes: (value: WhenQueueFinishes) => void
+  setNetworkMode: (mode: NetworkMode) => void
   setDraftUrl: (url: string) => void
   setDestinationDir: (dir: string) => void
 }
@@ -126,6 +216,101 @@ export const useAppStore = create<AppStore>((set, get) => ({
   view: { name: 'list' },
   downloadFilter: 'all',
   setDownloadFilter: (downloadFilter) => set({ downloadFilter }),
+  downloadCategory: 'all',
+  setDownloadCategory: (downloadCategory) => set({ downloadCategory }),
+  downloadSort: 'default',
+  setDownloadSort: (downloadSort) => set({ downloadSort }),
+  downloadSearch: '',
+  setDownloadSearch: (downloadSearch) => set({ downloadSearch }),
+  mainTab: 'downloads',
+  setMainTab: (mainTab) => set({ mainTab }),
+  grabber: [],
+  grabberSort: null,
+  setGrabberSort: (grabberSort) =>
+    set((state) => ({
+      grabberSort,
+      grabber: grabberSort ? sortGrabberLinks(state.grabber, grabberSort) : state.grabber
+    })),
+  addToGrabber: (urls) => {
+    for (const url of urls) {
+      // Open each link and dig out the real download link(s) before listing it: a page URL that
+      // hides the file behind a redirect, an attachment or an embedded player resolves here.
+      void (async () => {
+        let targets = [url]
+        try {
+          const resolved = await window.plexo.resolveLinks(url)
+          if (resolved.links.length > 0) targets = resolved.links.map((link) => link.url)
+        } catch {
+          // Keep the link as given; probing it reports whatever is wrong with it.
+        }
+        const known = new Set(get().grabber.map((link) => link.url))
+        const fresh = targets.filter((target) => !known.has(target))
+        if (fresh.length === 0) return
+        const entries: GrabberLink[] = fresh.map((target) => ({
+          id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+          url: target,
+          fileName: fileNameFromPath(target) || target,
+          host: sourceOf(target),
+          totalBytes: null,
+          status: 'checking'
+        }))
+        const patch = (id: string, fields: Partial<GrabberLink>): void =>
+          set((state) => {
+            const grabber = state.grabber.map((link) =>
+              link.id === id ? { ...link, ...fields } : link
+            )
+            return {
+              grabber: state.grabberSort ? sortGrabberLinks(grabber, state.grabberSort) : grabber
+            }
+          })
+        set((state) => {
+          const grabber = [...state.grabber, ...entries]
+          return {
+            grabber: state.grabberSort ? sortGrabberLinks(grabber, state.grabberSort) : grabber,
+            mainTab: 'grabber'
+          }
+        })
+        // Check a few at a time: a page can yield hundreds, and probing them all at once would
+        // open hundreds of sockets at the server.
+        let next = 0
+        const worker = async (): Promise<void> => {
+          while (next < entries.length) {
+            const entry = entries[next++]
+            try {
+              const probe = await window.plexo.probeUrl(entry.url)
+              patch(entry.id, {
+                status: 'ready',
+                probe,
+                fileName: probe.suggestedFileName,
+                totalBytes: probe.totalBytes,
+                host: sourceOf(probe.finalUrl)
+              })
+            } catch (error) {
+              patch(entry.id, {
+                status: 'error',
+                error: error instanceof Error ? error.message : String(error)
+              })
+            }
+          }
+        }
+        await Promise.all(Array.from({ length: Math.min(6, entries.length) }, worker))
+      })()
+    }
+  },
+  removeFromGrabber: (ids) =>
+    set((state) => ({ grabber: state.grabber.filter((link) => !ids.includes(link.id)) })),
+  clearGrabber: () => set({ grabber: [] }),
+  moveGrabberLink: (id, direction) =>
+    set((state) => {
+      const grabber = [...state.grabber]
+      const from = grabber.findIndex((link) => link.id === id)
+      if (from < 0) return {}
+      const to = direction === 'up' ? from - 1 : from + 1
+      if (to < 0 || to >= grabber.length) return {}
+      const [moved] = grabber.splice(from, 1)
+      grabber.splice(to, 0, moved)
+      return { grabber, grabberSort: null }
+    }),
   downloadSchedule: initial.downloadSchedule,
   newDownloadOpen: false,
   downloadsAtOnce: initial.downloadsAtOnce,
@@ -133,6 +318,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   slowMode: initial.slowMode,
   slowModeSpeed: initial.slowModeSpeed,
   speedUnit: initial.speedUnit,
+  onDownloadComplete: initial.onDownloadComplete,
+  whenQueueFinishes: initial.whenQueueFinishes,
+  networkMode: initial.networkMode,
 
   draftUrl: '',
   links: [],
@@ -267,6 +455,21 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setSpeedUnit: (speedUnit) => {
     set({ speedUnit })
     persist({ speedUnit })
+  },
+
+  setOnDownloadComplete: (onDownloadComplete) => {
+    set({ onDownloadComplete })
+    persist({ onDownloadComplete })
+  },
+
+  setWhenQueueFinishes: (whenQueueFinishes) => {
+    set({ whenQueueFinishes })
+    persist({ whenQueueFinishes })
+  },
+
+  setNetworkMode: (networkMode) => {
+    set({ networkMode })
+    persist({ networkMode })
   },
 
   setDraftUrl: (draftUrl) => set({ draftUrl }),

@@ -38,6 +38,7 @@ export function MoreActionsMenu({
                   variant="secondary"
                   aria-label="More actions"
                   disabled={disabled}
+                  className="size-9 rounded-[10px]"
                 >
                   <Ellipsis />
                 </Button>

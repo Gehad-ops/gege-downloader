@@ -38,9 +38,24 @@ const ids = (items: DownloadItem[]): ActionId[] =>
   availableActions(items).flatMap((group) => group.map((action) => action.id))
 
 test.describe('what each state offers', () => {
-  test('downloading and queued', () => {
-    for (const status of ['downloading', 'queued'] as const)
-      expect(ids([download({ status })])).toEqual(['pause', 'reveal', 'copy', 'cancel'])
+  test('downloading', () => {
+    expect(ids([download({ status: 'downloading' })])).toEqual([
+      'pause',
+      'reveal',
+      'copy',
+      'cancel'
+    ])
+  })
+
+  test('queued can also be moved in the queue', () => {
+    expect(ids([download({ status: 'queued' })])).toEqual([
+      'moveUp',
+      'moveDown',
+      'pause',
+      'reveal',
+      'copy',
+      'cancel'
+    ])
   })
 
   test('paused', () => {

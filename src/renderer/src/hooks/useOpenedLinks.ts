@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useAppStore } from '../store/useAppStore'
-import { acceptedLink } from '../utils/format'
+import { acceptedLinks } from '../utils/format'
 
 /** Opens New download with links handed to Plexo, for the user to look at and start. */
 export function useOpenedLinks(): void {
@@ -29,8 +29,11 @@ export function useNewDownloadShortcuts(): void {
 
     const onPaste = (event: ClipboardEvent): void => {
       if (busy(event.target)) return
-      const link = acceptedLink(event.clipboardData?.getData('text') ?? '')
-      if (link) openNewDownload(link)
+      const text = event.clipboardData?.getData('text') ?? ''
+      const links = acceptedLinks(text)
+      if (links.length === 0) return
+      // A pasted list opens New download with every link in it; a single link as before.
+      openNewDownload(links.length > 1 ? text.trim() : links[0])
     }
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key.toLowerCase() !== 'n' || !(isMac ? event.metaKey : event.ctrlKey)) return
@@ -43,12 +46,13 @@ export function useNewDownloadShortcuts(): void {
     const onDrop = (event: DragEvent): void => {
       event.preventDefault()
       const file = event.dataTransfer?.files[0]
-      const link = file
-        ? /\.torrent$/i.test(file.name)
-          ? window.plexo.pathForFile(file)
-          : null
-        : acceptedLink(event.dataTransfer?.getData('text') ?? '')
-      if (link) openNewDownload(link)
+      if (file) {
+        if (/\.torrent$/i.test(file.name)) openNewDownload(window.plexo.pathForFile(file))
+        return
+      }
+      const text = event.dataTransfer?.getData('text') ?? ''
+      const links = acceptedLinks(text)
+      if (links.length > 0) openNewDownload(links.length > 1 ? text.trim() : links[0])
     }
 
     window.addEventListener('paste', onPaste)

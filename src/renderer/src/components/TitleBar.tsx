@@ -2,19 +2,21 @@ import { TITLE_BAR_HEIGHT } from '../theme'
 
 const isMac = window.plexo.platform === 'darwin'
 
-/** The window's title bar, the same on every OS: its name, centered, on a strip the window is
- * dragged by. The OS's own controls sit over it (see main/index.ts): macOS's traffic lights at
- * the left, Windows' and Linux's minimize/maximize/close at the right. */
+/** The window's title bar, the same on every OS: the mark and name at the left, on a strip the
+ * window is dragged by. The OS's own controls sit over it (see main/index.ts). */
 export function TitleBar(): React.JSX.Element {
   return (
     <div
       style={{ height: TITLE_BAR_HEIGHT }}
-      className={`flex shrink-0 items-center justify-center border-b-[0.5px] border-border bg-card [-webkit-app-region:drag] ${
-        // Clear of the controls on either side, so the name stays centered between them.
-        isMac ? 'px-[94px]' : 'px-[140px]'
+      className={`flex shrink-0 items-center border-b border-[var(--border-subtle)] bg-[var(--bg)] [-webkit-app-region:drag] ${
+        isMac ? 'pr-3 pl-[94px]' : 'pr-[140px] pl-3.5'
       }`}
     >
-      <div className="truncate font-sans text-[13px] leading-none font-semibold text-[var(--text-secondary)]">
+      <div className="flex items-center gap-2 text-[12px] font-semibold text-[var(--text-secondary)]">
+        <span
+          aria-hidden
+          className="size-3.5 rounded-[5px] bg-[linear-gradient(135deg,var(--chart-teal),var(--chart-blue))]"
+        />
         Plexo
       </div>
     </div>

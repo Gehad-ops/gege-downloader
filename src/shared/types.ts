@@ -331,6 +331,17 @@ export interface DownloadSchedule {
   endDate?: string
 }
 
+/** What to do with each download as it finishes: nothing, open it, or show it in its folder. */
+export type OnDownloadComplete = 'none' | 'open' | 'reveal'
+
+/** What to do once every download has finished: nothing, quit Plexo, or ask the OS to sleep or
+ * shut down. */
+export type WhenQueueFinishes = 'none' | 'quit' | 'sleep' | 'shutdown'
+
+/** How a download uses the networks picked for it: all of them at once (combine, the default), or
+ * one at a time, taking turns from download to download (alternate). */
+export type NetworkMode = 'combine' | 'alternate'
+
 /** What app-settings.json holds, and what the renderer sends to change it (merged over the saved
  * values, `undefined` clearing one). A missing field was never set. */
 export interface AppSettings {
@@ -352,6 +363,14 @@ export interface AppSettings {
   /** How speeds are shown everywhere; sizes stay in bytes either way. */
   speedUnit?: SpeedUnit
   browserExtensionUsed?: boolean
+  /** After each download finishes. */
+  onDownloadComplete?: OnDownloadComplete
+  /** Once the queue empties. Persisted, so it survives a relaunch. */
+  whenQueueFinishes?: WhenQueueFinishes
+  /** Combine every picked network on one download, or alternate one network per download. */
+  networkMode?: NetworkMode
+  /** Where the alternation stands: which pick the next download takes. */
+  networkRotation?: number
 }
 
 /** bytes: MB/s. bits: Mbps, as internet plans and speed tests count them. */
@@ -378,6 +397,10 @@ export interface InitialState {
   speedUnit: SpeedUnit
   /** The last folder picked, if it still exists — otherwise the renderer uses downloadsDir. */
   destinationDir?: string
+  onDownloadComplete: OnDownloadComplete
+  whenQueueFinishes: WhenQueueFinishes
+  networkMode: NetworkMode
+  networkRotation: number
 }
 
 interface StartDownloadRequestBase {
@@ -429,6 +452,39 @@ export interface PendingLink {
   signedInTo?: string
   /** A failed download this looks like the same file as, for the user to resume instead. */
   resumes?: { id: string; fileName: string }
+}
+
+/** What an element a grabbed link came from was: an anchor, or one of the media tags a page
+ * points at directly. */
+export type PageLinkKind = 'link' | 'image' | 'video' | 'audio' | 'file'
+
+/** One link found in a page, for "Download all links". */
+export interface PageLink {
+  url: string
+  kind: PageLinkKind
+}
+
+/** A page's links, as the grabber reads them (see main/download/pageLinks.ts). */
+export interface PageLinks {
+  /** Where the page actually is, after redirects — relative links resolve against it. */
+  finalUrl: string
+  title: string
+  links: PageLink[]
+}
+
+/** One link a URL resolves to: the file itself, or a link found inside the page it opens. */
+export interface ResolvedLink {
+  url: string
+  fileName: string
+  kind: PageLinkKind
+}
+
+/** What a link resolves to. `direct`: the URL *is* the file. Otherwise `links` are the download
+ * candidates found in the page (see main/download/resolve.ts). */
+export interface ResolvedLinks {
+  finalUrl: string
+  direct: boolean
+  links: ResolvedLink[]
 }
 
 export interface StartTorrentDownloadRequest extends StartDownloadRequestBase {

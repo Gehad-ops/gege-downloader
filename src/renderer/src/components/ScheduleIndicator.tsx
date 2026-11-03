@@ -14,9 +14,9 @@ export function ScheduleIndicator({ onClick }: { onClick: () => void }): React.J
           <Button
             type="button"
             variant="secondary"
-            size="icon"
+            size="icon-sm"
             aria-label="Download schedule enabled"
-            className="text-primary"
+            className="size-9 rounded-[10px] text-primary"
             onClick={onClick}
           >
             <Clock3 />

@@ -50,54 +50,50 @@ test('mixed selection applies actions only to eligible downloads and keeps finis
   await plexo.waitForStatus('paused')
 
   const page = plexo.page
-  const beforeSelection = await page
-    .getByRole('button', { name: 'Open paused.bin', exact: true })
-    .boundingBox()
+  // The header wraps at this width, so it changes height when a selection appears. What must not
+  // change is where the row sits within the list itself.
+  const rowOffset = async (): Promise<number> => {
+    const table = page.locator('[role=table]')
+    const tableBox = await table.boundingBox()
+    const rowBox = await page
+      .getByRole('button', { name: 'Open paused.bin', exact: true })
+      .boundingBox()
+    return (rowBox?.y ?? 0) - (tableBox?.y ?? 0)
+  }
+  const beforeSelection = await rowOffset()
   await page.getByRole('checkbox', { name: 'Select paused.bin', exact: true }).check()
-  const toolbar = page.getByRole('toolbar', { name: 'Selected downloads' })
-  await expect(page.getByRole('heading', { level: 1 })).toBeHidden()
-  await toolbar.getByRole('button', { name: 'Select all', exact: true }).click()
+  const toolbar = page.getByRole('toolbar', { name: 'Downloads' })
+  await expect(page.getByRole('heading', { level: 1, name: 'Downloads' })).toBeVisible()
+  await page.getByRole('checkbox', { name: 'Select all', exact: true }).check()
   await expect(toolbar.getByText('3 selected', { exact: true })).toBeVisible()
   await expect(page.locator('[data-selected=true]')).toHaveCount(3)
-  const afterSelection = await page
-    .getByRole('button', { name: 'Open paused.bin', exact: true })
-    .boundingBox()
-  expect(afterSelection?.y).toBe(beforeSelection?.y)
+  const afterSelection = await rowOffset()
+  expect(afterSelection).toBe(beforeSelection)
   await expect(page.getByRole('button', { name: 'Resume (1)', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: /^Retry/ })).toHaveCount(0)
   await expect(
     page.getByRole('button', { name: 'Fix link expired.bin', exact: true })
   ).toBeVisible()
-  // Whatever is selected, the toolbar holds its two fixed buttons, the next steps and More.
-  await expect(toolbar.getByRole('button')).toHaveText([
-    '',
-    'Select all',
-    'Resume (1)',
-    'Cancel downloads (1)',
-    ''
-  ])
-  await openMore(page)
-  await expect(
-    page.getByRole('menuitem', { name: 'Remove 2 from list', exact: true })
-  ).toBeVisible()
-  await page.keyboard.press('Escape')
+  // Each step has its own toolbar button, as Ezoo's fixed toolbar does; only what applies is on.
+  await expect(toolbar.getByRole('button', { name: 'Cancel (1)', exact: true })).toBeVisible()
+  await expect(toolbar.getByRole('button', { name: 'Remove (2)', exact: true })).toBeVisible()
   // A finished and a failed download leave the list together, after asking.
-  await chooseMore(page, 'Remove 2 from list')
+  await toolbar.getByRole('button', { name: 'Remove (2)', exact: true }).click()
   const removal = page.getByRole('alertdialog')
   await expect(removal.getByText(/lose the part they already downloaded/)).toBeVisible()
   await removal.getByRole('button', { name: 'Cancel', exact: true }).click()
   await expect(toolbar.getByText('3 selected', { exact: true })).toBeVisible()
-  await chooseMore(page, 'Remove 2 from list')
+  await toolbar.getByRole('button', { name: 'Remove (2)', exact: true }).click()
   await page.getByRole('alertdialog').getByRole('button', { name: 'Remove', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Open finished.bin', exact: true })).toBeHidden()
   expect(existsSync(finished.destinationPath)).toBe(true)
   await expect(toolbar.getByText('1 selected', { exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Cancel downloads (1)', exact: true }).click()
+  await page.getByRole('button', { name: 'Cancel (1)', exact: true }).click()
   const confirmation = page.getByRole('alertdialog')
   await expect(confirmation.getByText(/part already downloaded will be deleted/)).toBeVisible()
   await confirmation.getByRole('button', { name: 'Keep', exact: true }).click()
   await expect(toolbar.getByText('1 selected', { exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Cancel downloads (1)', exact: true }).click()
+  await page.getByRole('button', { name: 'Cancel (1)', exact: true }).click()
   await page
     .getByRole('alertdialog')
     .getByRole('button', { name: 'Cancel download', exact: true })
@@ -121,7 +117,7 @@ test('missing finished files can leave the list but are excluded from file remov
     .getByRole('checkbox', { name: `Select ${complete.fileName}`, exact: true })
     .check()
   await expect(plexo.page.getByRole('button', { name: /^Move/ })).toHaveCount(0)
-  await plexo.page.getByRole('button', { name: 'Remove from list (1)', exact: true }).click()
+  await plexo.page.getByRole('button', { name: 'Remove (1)', exact: true }).click()
   await plexo.page
     .getByRole('alertdialog')
     .getByRole('button', { name: 'Remove', exact: true })
@@ -265,7 +261,7 @@ test('a removal that fails for one download still removes the rest, and asks aga
   const page = plexo.page
   await page.getByRole('checkbox', { name: 'Select goes.bin', exact: true }).check()
   await page.getByRole('checkbox', { name: 'Select stays.bin', exact: true }).check()
-  await page.getByRole('button', { name: /^Move to (Trash|Recycle Bin) \(2\)$/ }).click()
+  await chooseMore(page, /^Move 2 files to (Trash|Recycle Bin)$/)
   const dialog = page.getByRole('alertdialog')
   await dialog.getByRole('button', { name: 'Delete files', exact: true }).click()
 

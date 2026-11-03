@@ -1,89 +1,116 @@
-import type { DownloadState, FinishedDownload } from '@shared/types'
-import { ChevronRight, Plus, X } from 'lucide-react'
 import { cn } from 'cn'
-import { Fragment, memo, useCallback, useEffect, useState } from 'react'
-import { DownloadContextMenu } from '../components/DownloadContextMenu'
+import {
+  Clock3,
+  Gauge,
+  ListPlus,
+  ListX,
+  Pause,
+  Play,
+  Plus,
+  SlidersHorizontal,
+  Trash2,
+  X,
+  type LucideIcon
+} from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { rotatedNetwork } from '@shared/networkRotation'
 import { useDownloadActions, useDownloadActionsState } from '../components/downloadActionsContext'
-import { ACTION_META, toolbarLabel } from '../components/downloadActionMeta'
 import { MoreActionsMenu } from '../components/MoreActionsMenu'
-import { DownloadFilterMenu } from '../components/DownloadFilterMenu'
+import { CategorySidebar } from '../components/CategorySidebar'
+import { DownloadSearchInput } from '../components/DownloadSearchInput'
+import { CompletionMenu } from '../components/CompletionMenu'
 import { CombineDiagram } from '../components/CombineDiagram'
 import { LimitsDialog } from '../components/LimitsDialog'
-import { ScheduleIndicator } from '../components/ScheduleIndicator'
-import { networkStatusText } from '../components/NetworkRow'
-import { scheduleMessage, scheduleWindow } from '@shared/downloadSchedule'
 import { NetworksMenu } from '../components/NetworksMenu'
-import { TorrentBadge } from '../components/TorrentBadge'
+import { DownloadTable } from '../components/DownloadTable'
+import { LinkGrabberView } from '../components/LinkGrabberView'
+import { StatsRow } from '../components/StatsRow'
 import { Button } from '../components/ui/button'
-import { Checkbox } from '../components/ui/checkbox'
-import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/tooltip'
-import { useNetworkVisuals, type ResolveNetworkVisual } from '../hooks/useNetworkVisuals'
-import { useAppStore, type DownloadFilter } from '../store/useAppStore'
-import {
-  describeError,
-  fileExtensionBadge,
-  formatBytes,
-  formatEta,
-  formatPercent,
-  formatWhen,
-  isFolder,
-  sourceOf,
-  wantedBytes
-} from '../utils/format'
-import { useFormatSpeed } from '../hooks/useFormatSpeed'
+import { useAppStore, type DownloadCategory, type DownloadFilter } from '../store/useAppStore'
+import { categoryOf } from '../utils/categories'
+import { sortItems, type SortKey, type SortState } from '../utils/downloadSort'
+import { sourceOf } from '../utils/format'
 import {
   availableActions,
-  isFinished,
-  rowAction,
-  splitToolbar,
-  type ActionId
+  type ActionId,
+  type AvailableAction,
+  type DownloadItem
 } from '../utils/downloadActions'
 
-type Item = DownloadState | FinishedDownload
-
-interface Group {
-  label: string
-  items: Item[]
-}
-
-function filterOf(item: Item): Exclude<DownloadFilter, 'all'> {
+function filterOf(item: DownloadItem): Exclude<DownloadFilter, 'all'> {
   if ('unitsWritten' in item || item.status === 'completed') return 'finished'
   return item.status === 'error' ? 'failed' : 'progress'
 }
 
-function groupsOf(downloads: DownloadState[], history: FinishedDownload[]): Group[] {
-  const byStatus = (status: DownloadState['status']): DownloadState[] =>
-    downloads.filter((download) => download.status === status)
-  return [
-    { label: 'Downloading', items: byStatus('downloading') },
-    {
-      label: 'Queued',
-      items: byStatus('queued').sort((a, b) => (a.queuedAt ?? 0) - (b.queuedAt ?? 0))
-    },
-    { label: 'Paused', items: byStatus('paused') },
-    { label: 'Needs attention', items: byStatus('error') },
-    // Completed but not in history yet: on its way there, so listed with it.
-    { label: 'Finished', items: [...byStatus('completed'), ...history] }
-  ].filter((group) => group.items.length > 0)
+/** Whether the search box keeps this download: its name, its link, or its host, lower-cased. */
+function matchesSearch(item: DownloadItem, query: string): boolean {
+  return (
+    item.fileName.toLowerCase().includes(query) ||
+    item.url.toLowerCase().includes(query) ||
+    sourceOf(item.url).toLowerCase().includes(query)
+  )
 }
 
-/** "2 downloading · 1 queued", or "all done". */
-function summaryOf(downloads: DownloadState[]): string {
-  const count = (status: DownloadState['status']): number =>
-    downloads.filter((download) => download.status === status).length
-  const parts = [
-    [count('downloading'), 'downloading'],
-    [count('queued'), 'queued'],
-    [count('paused'), 'paused'],
-    [count('error'), 'need attention']
-  ]
-    .filter(([n]) => (n as number) > 0)
-    .map(([n, label]) => `${n} ${label}`)
-  return parts.length > 0 ? parts.join(' · ') : 'all done'
+/** One of the four actions in the grouped button cluster. */
+function ToolAction({
+  icon: Icon,
+  label,
+  disabled,
+  emphasis,
+  onClick
+}: {
+  icon: LucideIcon
+  label: string
+  disabled?: boolean
+  emphasis?: boolean
+  onClick: () => void
+}): React.JSX.Element {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        'flex h-[30px] items-center gap-1.5 rounded-[8px] px-3 text-[13px] font-medium text-[var(--text)] outline-none hover:bg-[var(--hover-bg)] disabled:pointer-events-none disabled:opacity-40',
+        emphasis && 'bg-[var(--bg-tertiary)]'
+      )}
+    >
+      <Icon aria-hidden className="size-3.5" />
+      {label}
+    </button>
+  )
 }
 
-const groupLabelClass =
-  'font-mono text-[10.5px] leading-none font-medium tracking-[0.18em] text-muted-foreground uppercase'
+/** A standalone action on the right of the toolbar. */
+function PillButton({
+  icon: Icon,
+  label,
+  disabled,
+  active,
+  onClick
+}: {
+  icon: LucideIcon
+  label: string
+  disabled?: boolean
+  active?: boolean
+  onClick: () => void
+}): React.JSX.Element {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        'flex h-9 items-center gap-2 rounded-[10px] border border-[var(--card-border)] bg-[var(--card)] px-3.5 text-[13px] font-medium text-[var(--text)] outline-none hover:bg-[var(--hover-bg)] disabled:pointer-events-none disabled:opacity-40',
+        active && 'border-[var(--active-ring)] bg-[var(--select-bg)] text-[var(--color-accent)]'
+      )}
+    >
+      <Icon aria-hidden className="size-[15px]" />
+      {label}
+    </button>
+  )
+}
 
 export function DownloadsScreen(): React.JSX.Element {
   const downloadsById = useAppStore((store) => store.downloads)
@@ -92,37 +119,81 @@ export function DownloadsScreen(): React.JSX.Element {
   const openNewDownload = useAppStore((store) => store.openNewDownload)
   const filter = useAppStore((store) => store.downloadFilter)
   const setFilter = useAppStore((store) => store.setDownloadFilter)
+  const category = useAppStore((store) => store.downloadCategory)
+  const setCategory = useAppStore((store) => store.setDownloadCategory)
+  const search = useAppStore((store) => store.downloadSearch)
+  const setSearch = useAppStore((store) => store.setDownloadSearch)
+  const mainTab = useAppStore((store) => store.mainTab)
+  const setMainTab = useAppStore((store) => store.setMainTab)
+  const slowMode = useAppStore((store) => store.slowMode)
+  const setSlowMode = useAppStore((store) => store.setSlowMode)
+  const grabberCount = useAppStore((store) => store.grabber.length)
+  // A signature of everything the alternating assignment depends on: the mode, the pool, and the
+  // active downloads' order and networks. A string, so a speed tick (which changes the downloads
+  // object) doesn't re-run the effect below.
+  const alternateSignal = useAppStore((store) => {
+    if (store.networkMode !== 'alternate') return 'combine'
+    const pool = store.interfaces
+      .filter((iface) => !store.networkPreferences[iface.id]?.off)
+      .map((iface) => iface.id)
+    const active = Object.values(store.downloads)
+      .filter((download) => download.status === 'downloading' || download.status === 'queued')
+      .map(
+        (download) =>
+          `${download.id}${download.status === 'downloading' ? 'D' : 'Q'}${download.networks
+            .map((network) => (network.enabled ? '1' : '0'))
+            .join('')}`
+      )
+      .join(',')
+    return `${pool.join('|')}#${active}`
+  })
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const { perform, askClearFinished } = useDownloadActions()
   const { busy } = useDownloadActionsState()
   const [limitsOpen, setLimitsOpen] = useState(false)
   const [showSchedule, setShowSchedule] = useState(false)
   const [limitsPage, setLimitsPage] = useState<string | null>(null)
-  const [now, setNow] = useState(() => Date.now())
+  const [sort, setSort] = useState<SortState>({ key: 'default', descending: false })
 
-  useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 30_000)
-    return () => clearInterval(interval)
-  }, [])
+  const downloads = Object.values(downloadsById).filter(
+    (download) => download.status !== 'cancelled'
+  )
+  const allItems: DownloadItem[] = [...downloads, ...history]
 
-  const downloads = Object.values(downloadsById)
-    .filter((download) => download.status !== 'cancelled')
-    .sort((a, b) => a.startedAt - b.startedAt)
-  const allGroups = groupsOf(downloads, history)
-  const allItems = allGroups.flatMap((group) => group.items)
+  const query = search.trim().toLowerCase()
+  const searched =
+    query.length === 0 ? allItems : allItems.filter((item) => matchesSearch(item, query))
   const counts: Record<DownloadFilter, number> = {
-    all: allItems.length,
+    all: searched.length,
     progress: 0,
     finished: 0,
     failed: 0
   }
-  for (const item of allItems) counts[filterOf(item)]++
-  const groups = allGroups.filter(
-    (group) => filter === 'all' || filterOf(group.items[0]) === filter
+  const categoryCounts: Record<DownloadCategory, number> = {
+    all: searched.length,
+    video: 0,
+    audio: 0,
+    images: 0,
+    documents: 0,
+    archives: 0,
+    programs: 0,
+    other: 0
+  }
+  for (const item of searched) {
+    counts[filterOf(item)]++
+    categoryCounts[categoryOf(item)]++
+  }
+  const items = sortItems(
+    searched.filter(
+      (item) =>
+        (filter === 'all' || filterOf(item) === filter) &&
+        (category === 'all' || categoryOf(item) === category)
+    ),
+    sort
   )
-  const items = groups.flatMap((group) => group.items)
-  // Only what's still listed counts: one that finished or went is no longer selected.
   const chosen = items.filter((item) => selected.has(item.id))
+  const allSelected = items.length > 0 && chosen.length === items.length
+  const someSelected = chosen.length > 0 && !allSelected
 
   const toggle = useCallback(
     (ids: string[], on: boolean): void =>
@@ -136,12 +207,26 @@ export function DownloadsScreen(): React.JSX.Element {
       }),
     []
   )
-  // Stable, with the colors resolved once here, so a finished row skips every progress push.
-  const networkVisual = useNetworkVisuals()
   const selectRow = useCallback((id: string, on: boolean) => toggle([id], on), [toggle])
+  const selectAll = useCallback(
+    (on: boolean) =>
+      toggle(
+        items.map((item) => item.id),
+        on
+      ),
+    [toggle, items]
+  )
   const openRow = useCallback((id: string) => setView({ name: 'download', id }), [setView])
-  // Keys for the selection: Esc clears it, Select all, and Delete takes
-  // the selected off the list (with Cmd/Ctrl, moves their files to the Trash), each asking first.
+  const changeSort = useCallback(
+    (key: SortKey) =>
+      setSort((previous) =>
+        previous.key === key
+          ? { key, descending: !previous.descending }
+          : { key, descending: false }
+      ),
+    []
+  )
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
       const target = event.target
@@ -171,188 +256,288 @@ export function DownloadsScreen(): React.JSX.Element {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [items, chosen, perform])
 
-  // What the toolbar offers: the two actions most needed for what's selected as buttons, and
-  // the rest of what the menu does for the selection behind More, so six never need more room.
-  const { buttons: toolbarButtons, more: moreActions } = splitToolbar(availableActions(chosen))
+  // Alternating networks by position: the Nth active download (running first, then queued in
+  // order) takes the Nth network of the pool. Reordering the queue moves the turns, and this puts
+  // every download on the network its new place calls for.
+  useEffect(() => {
+    const state = useAppStore.getState()
+    if (state.networkMode !== 'alternate') return
+    const pool = state.interfaces
+      .filter((iface) => !state.networkPreferences[iface.id]?.off)
+      .map((iface) => iface.id)
+    if (pool.length <= 1) return
+    const active = Object.values(state.downloads)
+      .filter((download) => download.status === 'downloading' || download.status === 'queued')
+      .sort((a, b) => {
+        if (a.status !== b.status) return a.status === 'downloading' ? -1 : 1
+        return a.status === 'queued'
+          ? (a.queuedAt ?? 0) - (b.queuedAt ?? 0)
+          : a.startedAt - b.startedAt
+      })
+    active.forEach((download, index) => {
+      const target = rotatedNetwork(pool, index).network
+      const targetNetwork = download.networks.find((network) => network.id === target)
+      if (targetNetwork?.enabled && download.networks.filter((n) => n.enabled).length === 1) return
+      // Switch the wanted network on first, so the download is never left with none.
+      if (targetNetwork && !targetNetwork.enabled) {
+        void window.plexo.setDownloadNetwork(download.id, target, true)
+      }
+      for (const network of download.networks) {
+        if (network.id !== target && network.enabled) {
+          void window.plexo.setDownloadNetwork(download.id, network.id, false)
+        }
+      }
+    })
+  }, [alternateSignal])
+
+  const actionGroups = availableActions(chosen)
+  const flatActions = actionGroups.flat()
+  const actionFor = (id: ActionId): AvailableAction | undefined =>
+    flatActions.find((action) => action.id === id)
+  const resumeAction = actionFor('resume')
+  const pauseAction = actionFor('pause')
+  const cancelAction = actionFor('cancel')
+  const removeAction = actionFor('remove')
+  // What the toolbar already shows as its own button stays out of More.
+  const onToolbar = new Set<ActionId>(['pause', 'resume', 'cancel', 'remove'])
+  const moreActions = actionGroups
+    .map((group) => group.filter((action) => !onToolbar.has(action.id)))
+    .filter((group) => group.length > 0)
+  const counted = (label: string, action: AvailableAction | undefined): string =>
+    action ? `${label} (${action.targets.length})` : label
 
   const openSchedule = (): void => {
     setLimitsPage(null)
     setShowSchedule(true)
     setLimitsOpen(true)
   }
+  const openLimits = (): void => {
+    setShowSchedule(false)
+    setLimitsPage(null)
+    setLimitsOpen(true)
+  }
+  const pickView = (nextFilter: DownloadFilter, nextCategory: DownloadCategory): void => {
+    setFilter(nextFilter)
+    setCategory(nextCategory)
+    setSelected(new Set())
+  }
 
   return (
-    <div className="flex h-full flex-col bg-background">
-      {chosen.length === 0 ? (
-        <div className="flex h-12 shrink-0 items-center gap-3 border-b-[0.5px] border-border px-5">
-          <DownloadFilterMenu
-            value={filter}
-            counts={counts}
-            onChange={(next) => {
-              setFilter(next)
-              setSelected(new Set())
-            }}
-          />
-          {/* One group already says it in its header. */}
-          {allGroups.length > 1 && (
-            <div className="font-mono text-[11.5px] leading-none text-muted-foreground">
-              {summaryOf(downloads)}
-            </div>
-          )}
-          <div className="flex-1" />
-          <ScheduleIndicator onClick={openSchedule} />
-          <NetworksMenu
-            onOpenLimits={(page) => {
-              setShowSchedule(false)
-              setLimitsPage(page)
-              setLimitsOpen(true)
-            }}
-          />
-          <Button type="button" onClick={() => openNewDownload()}>
-            <Plus data-icon="inline-start" />
-            New download
-          </Button>
-        </div>
-      ) : (
-        <div
-          role="toolbar"
-          aria-label="Selected downloads"
-          aria-busy={busy}
-          className="flex h-12 shrink-0 items-center gap-3 border-b-[0.5px] border-border px-5"
-        >
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  type="button"
-                  size="icon-sm"
-                  variant="ghost"
-                  aria-label="Deselect all"
-                  disabled={busy}
-                  onClick={() => setSelected(new Set())}
-                >
-                  <X />
-                </Button>
-              }
-            />
-            <TooltipContent>Deselect all</TooltipContent>
-          </Tooltip>
-          <span className="shrink-0 whitespace-nowrap text-[13px] font-semibold">
-            {chosen.length} selected
-          </span>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            disabled={busy || chosen.length === items.length}
-            onClick={() => setSelected(new Set(items.map((item) => item.id)))}
-          >
-            Select all
-          </Button>
-          <div className="flex-1" />
-          <div className="flex min-w-0 items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {toolbarButtons.map(({ id, targets }) => (
-              <Button
-                key={id}
-                type="button"
-                size="sm"
-                variant={ACTION_META[id].destructive ? 'destructive' : 'secondary'}
-                disabled={busy}
-                onClick={() => void perform(id, targets)}
-              >
-                {toolbarLabel(id, targets.length)}
-              </Button>
-            ))}
-            <MoreActionsMenu groups={moreActions} disabled={busy} />
-          </div>
-          <ScheduleIndicator onClick={openSchedule} />
-        </div>
-      )}
+    <div className="flex h-full min-h-0 bg-[var(--bg)]">
+      <CategorySidebar
+        mainTab={mainTab}
+        onTab={setMainTab}
+        grabberCount={grabberCount}
+        filter={filter}
+        category={category}
+        counts={counts}
+        categoryCounts={categoryCounts}
+        onPick={pickView}
+        onClearFinished={askClearFinished}
+        hasFinished={history.length > 0}
+      />
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
-        {groups.length === 0 &&
-          (filter === 'all' ? (
-            <EmptyState />
-          ) : (
-            <div role="status" className="flex flex-col items-center gap-2 px-5 py-16 text-center">
-              <p className="text-[16px] font-semibold">
-                {filter === 'progress'
-                  ? 'No downloads in progress'
-                  : filter === 'finished'
-                    ? 'No finished downloads'
-                    : 'No downloads need attention'}
-              </p>
-              <Button type="button" variant="secondary" onClick={() => setFilter('all')}>
-                Show all downloads
-              </Button>
-            </div>
-          ))}
-        {groups.map((group) => {
-          const ids = group.items.map((item) => item.id)
-          const all = ids.every((id) => selected.has(id))
-          const some = !all && ids.some((id) => selected.has(id))
-          return (
-            <section key={group.label} aria-label={group.label}>
-              <div className="flex items-center gap-3 border-b-[0.5px] border-border pt-5 pb-3">
-                <Checkbox
-                  aria-label={
-                    group.label === 'Needs attention'
-                      ? 'Select all downloads needing attention'
-                      : `Select all ${group.label.toLowerCase()} downloads`
-                  }
-                  checked={all}
-                  indeterminate={some}
-                  onCheckedChange={(on) => toggle(ids, on)}
+      <main className="flex min-w-0 flex-1 flex-col gap-5 overflow-hidden px-8 py-6">
+        {mainTab === 'grabber' ? (
+          <>
+            <header className="flex flex-wrap items-center gap-2.5">
+              <h1 className="mr-auto text-[24px] leading-none font-bold tracking-[-0.02em]">
+                LinkGrabber
+              </h1>
+              <span className="rounded-full border border-[var(--card-border)] bg-[var(--card)] px-2.5 py-1 font-mono text-[11px] text-[var(--text-tertiary)]">
+                {grabberCount} {grabberCount === 1 ? 'link' : 'links'}
+              </span>
+            </header>
+            <LinkGrabberView />
+          </>
+        ) : (
+          <>
+            <header className="flex flex-wrap items-center gap-2.5">
+              <h1 className="mr-auto text-[24px] leading-none font-bold tracking-[-0.02em]">
+                Downloads
+              </h1>
+              <DownloadSearchInput value={search} onChange={setSearch} />
+              <button
+                type="button"
+                onClick={() => openNewDownload()}
+                className="accent-gradient flex h-9 items-center gap-2 rounded-[10px] px-3.5 text-[13px] font-semibold text-[#06231f] outline-none hover:opacity-95 focus-visible:ring-3 focus-visible:ring-[var(--color-accent)]/40"
+              >
+                <Plus aria-hidden className="size-4" strokeWidth={2.4} />
+                Add URL
+              </button>
+              <button
+                type="button"
+                onClick={() => openNewDownload()}
+                className="flex h-9 items-center gap-2 rounded-[10px] border border-[var(--card-border)] bg-[var(--card)] px-3.5 text-[13px] font-medium text-[var(--text)] outline-none hover:bg-[var(--hover-bg)] focus-visible:ring-3 focus-visible:ring-[var(--color-accent)]/40"
+              >
+                <ListPlus aria-hidden className="size-4" />
+                Add batch
+              </button>
+            </header>
+
+            <StatsRow active={counts.progress} finished={counts.finished} errors={counts.failed} />
+
+            <div
+              role="toolbar"
+              aria-label="Downloads"
+              aria-busy={busy}
+              className="flex flex-wrap items-center gap-2"
+            >
+              <div className="flex items-center gap-1 rounded-[12px] border border-[var(--card-border)] bg-[var(--card)] p-1">
+                <ToolAction
+                  icon={Play}
+                  label={counted('Resume', resumeAction)}
+                  disabled={!resumeAction || busy}
+                  emphasis={Boolean(resumeAction)}
+                  onClick={() => resumeAction && void perform('resume', resumeAction.targets)}
                 />
-                <h2 className={groupLabelClass}>
-                  {group.label}
-                  <span className="ml-2.5 tracking-normal">{group.items.length}</span>
-                </h2>
-                <div className="flex-1" />
-                {group.label === 'Finished' && history.length > 0 && (
-                  <button
-                    type="button"
-                    className="text-[12.5px] text-[var(--text-secondary)] hover:text-foreground"
-                    onClick={askClearFinished}
-                  >
-                    Clear finished list
-                  </button>
+                <ToolAction
+                  icon={Pause}
+                  label={counted('Pause', pauseAction)}
+                  disabled={!pauseAction || busy}
+                  emphasis={!resumeAction && Boolean(pauseAction)}
+                  onClick={() => pauseAction && void perform('pause', pauseAction.targets)}
+                />
+                <ToolAction
+                  icon={X}
+                  label={counted('Cancel', cancelAction)}
+                  disabled={!cancelAction || busy}
+                  onClick={() => cancelAction && void perform('cancel', cancelAction.targets)}
+                />
+                <ToolAction
+                  icon={Trash2}
+                  label={counted('Remove', removeAction)}
+                  disabled={!removeAction || busy}
+                  onClick={() => removeAction && void perform('remove', removeAction.targets)}
+                />
+              </div>
+
+              <PillButton
+                icon={ListX}
+                label="Clear done"
+                disabled={history.length === 0}
+                onClick={askClearFinished}
+              />
+
+              <div className="ml-auto flex flex-wrap items-center gap-2">
+                {chosen.length > 0 && (
+                  <span className="rounded-full bg-[var(--select-bg)] px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap text-[var(--color-accent)]">
+                    {chosen.length} selected
+                  </span>
+                )}
+                <MoreActionsMenu groups={moreActions} disabled={busy} />
+                <CompletionMenu />
+                <NetworksMenu
+                  compact
+                  onOpenLimits={(page) => {
+                    setShowSchedule(false)
+                    setLimitsPage(page)
+                    setLimitsOpen(true)
+                  }}
+                />
+                <PillButton
+                  icon={Clock3}
+                  label="Scheduler"
+                  active={showSchedule}
+                  onClick={openSchedule}
+                />
+                <PillButton
+                  icon={Gauge}
+                  label={slowMode ? 'Limiter: On' : 'Limiter: Off'}
+                  active={slowMode}
+                  onClick={() => setSlowMode(!slowMode)}
+                />
+                <PillButton icon={SlidersHorizontal} label="Limits" onClick={openLimits} />
+              </div>
+            </div>
+
+            {allItems.length === 0 ? (
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                <EmptyState />
+              </div>
+            ) : items.length === 0 ? (
+              <div
+                role="status"
+                className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 rounded-[18px] border border-[var(--card-border)] bg-[var(--card)] px-6 py-16 text-center"
+              >
+                {query.length > 0 || category !== 'all' ? (
+                  <>
+                    <p className="text-[18px] font-semibold">No downloads match</p>
+                    <p className="max-w-[380px] text-[13px] leading-[1.6] text-[var(--text-secondary)]">
+                      Try a different search, or a different type.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearch('')
+                        setCategory('all')
+                        setFilter('all')
+                      }}
+                      className="accent-gradient mt-1 flex h-9 items-center rounded-[10px] px-3.5 text-[13px] font-semibold text-[#06231f]"
+                    >
+                      Clear filters
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[18px] font-semibold">
+                      {filter === 'progress'
+                        ? 'No downloads in progress'
+                        : filter === 'finished'
+                          ? 'No finished downloads'
+                          : 'No downloads need attention'}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => setFilter('all')}
+                      className="mt-1"
+                    >
+                      Show all downloads
+                    </Button>
+                    {filter === 'finished' && history.length > 0 && (
+                      <button
+                        type="button"
+                        className="text-[12px] text-[var(--text-secondary)] hover:text-[var(--text)]"
+                        onClick={askClearFinished}
+                      >
+                        Clear finished list
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
-              {group.items.map((item) => (
-                <ListedDownload
-                  key={item.id}
-                  item={item}
-                  now={now}
-                  selected={selected.has(item.id)}
-                  // Only a selected row's menu acts on the selection.
-                  chosen={selected.has(item.id) ? chosen : NOT_CHOSEN}
-                  networkVisual={
-                    isFinished(item) || item.status === 'completed' ? undefined : networkVisual
-                  }
-                  onSelect={selectRow}
-                  onOpen={openRow}
-                  onPerform={perform}
-                />
-              ))}
-            </section>
-          )
-        })}
-      </div>
+            ) : (
+              <DownloadTable
+                items={items}
+                selected={selected}
+                chosen={chosen}
+                allSelected={allSelected}
+                someSelected={someSelected}
+                sort={sort}
+                onSort={changeSort}
+                onSelectAll={selectAll}
+                onSelect={selectRow}
+                onOpen={openRow}
+                onPerform={perform}
+              />
+            )}
 
-      <LimitsDialog
-        open={limitsOpen}
-        showSchedule={showSchedule}
-        onOpenChange={setLimitsOpen}
-        page={limitsPage}
-        onPageChange={setLimitsPage}
-      />
+            <LimitsDialog
+              open={limitsOpen}
+              showSchedule={showSchedule}
+              onOpenChange={setLimitsOpen}
+              page={limitsPage}
+              onPageChange={setLimitsPage}
+            />
+          </>
+        )}
+      </main>
     </div>
   )
 }
 
-// Colors are irrelevant here — the diagram is rendered `muted`, which overrides them all to
-// var(--icon-muted) — these are just three placeholder rows to draw the illustration with.
+// Colors are irrelevant here — the diagram is rendered `muted`, which overrides them all.
 const PLACEHOLDER_NETWORKS = [
   { solid: 'var(--icon-muted)', label: 'Wi-Fi' },
   { solid: 'var(--icon-muted)', label: 'USB' },
@@ -370,12 +555,12 @@ function EmptyState(): React.JSX.Element {
   const openNewDownload = useAppStore((store) => store.openNewDownload)
 
   return (
-    <div className="flex flex-col items-center gap-4 px-5 pt-16 pb-10 text-center">
+    <div className="mx-auto flex min-h-full max-w-[560px] flex-col items-center justify-center gap-4 px-6 py-10 text-center">
       <CombineDiagram networks={PLACEHOLDER_NETWORKS} muted />
       {noNetworks ? (
         <>
-          <div className="font-sans text-[16px] leading-[1.2] font-bold">No networks connected</div>
-          <div className="max-w-[380px] text-[12.5px] leading-[1.6] text-[var(--text-secondary)]">
+          <div className="text-[20px] leading-tight font-semibold">No networks connected</div>
+          <div className="max-w-[380px] text-[13px] leading-[1.6] text-[var(--text-secondary)]">
             Plexo needs at least one active network. Join a Wi-Fi network, plug in Ethernet, or
             connect your phone using USB tethering.
           </div>
@@ -394,295 +579,21 @@ function EmptyState(): React.JSX.Element {
         </>
       ) : (
         <>
-          <div className="font-sans text-[16px] leading-[1.2] font-bold">No downloads yet</div>
-          <div className="max-w-[380px] text-[12.5px] leading-[1.6] text-[var(--text-secondary)]">
+          <div className="text-[20px] leading-tight font-semibold">No downloads yet</div>
+          <div className="max-w-[380px] text-[13px] leading-[1.6] text-[var(--text-secondary)]">
             Paste a link ({PASTE_SHORTCUT}) or drop a .torrent anywhere in this window.
           </div>
-          <Button type="button" className="mt-1" onClick={() => openNewDownload()}>
-            <Plus data-icon="inline-start" />
+          <button
+            type="button"
+            onClick={() => openNewDownload()}
+            className="accent-gradient mt-1 flex h-9 items-center gap-2 rounded-[10px] px-3.5 text-[13px] font-semibold text-[#06231f]"
+          >
+            <Plus aria-hidden className="size-4" strokeWidth={2.4} />
             New download
-            <span className="ml-1 font-mono text-[11px] opacity-70">{NEW_SHORTCUT}</span>
-          </Button>
+            <span className="font-mono text-[11px] opacity-70">{NEW_SHORTCUT}</span>
+          </button>
         </>
       )}
     </div>
   )
 }
-
-const NOT_CHOSEN: Item[] = []
-
-/** A row with its right-click menu, memoized as one: a progress update to one download leaves
- * every other row, menu included, as it was. */
-const ListedDownload = memo(function ListedDownload({
-  chosen,
-  ...row
-}: React.ComponentProps<typeof DownloadRow> & { chosen: Item[] }): React.JSX.Element {
-  return (
-    <DownloadContextMenu item={row.item} selected={row.selected} chosen={chosen}>
-      <DownloadRow {...row} />
-    </DownloadContextMenu>
-  )
-})
-
-const DownloadRow = memo(function DownloadRow({
-  item,
-  now,
-  selected,
-  networkVisual,
-  onSelect,
-  onOpen,
-  onPerform
-}: {
-  item: Item
-  now: number
-  selected: boolean
-  /** Colors its progress bar and network dots; a finished row has none. */
-  networkVisual?: ResolveNetworkVisual
-  onSelect: (id: string, on: boolean) => void
-  onOpen: (id: string) => void
-  /** Does what the row's button says, the way the menu, the toolbar and its screen do. */
-  onPerform: (id: ActionId, targets: Item[]) => Promise<boolean>
-}): React.JSX.Element {
-  const formatSpeed = useFormatSpeed()
-  const schedule = useAppStore((store) => store.downloadSchedule)
-  const [working, setWorking] = useState(false)
-  const finished = isFinished(item) || item.status === 'completed'
-  const badge = isFolder(item) ? 'DIR' : fileExtensionBadge(item.fileName)
-  const wanted = wantedBytes(item)
-  const percent = formatPercent(item.bytesDownloaded, wanted)
-
-  let detail: string
-  let tone = 'text-muted-foreground'
-  if (isFinished(item) || item.status === 'completed') {
-    detail = [
-      formatBytes(wanted || item.bytesDownloaded),
-      // A torrent's badge already says where it came from.
-      item.kind === 'http' && sourceOf(item.url),
-      isFinished(item) && item.missing
-        ? 'moved or deleted'
-        : formatWhen(item.completedAt ?? now, now)
-    ]
-      .filter(Boolean)
-      .join(' · ')
-  } else {
-    const download = item
-    const sizes =
-      wanted > 0
-        ? `${formatBytes(download.bytesDownloaded)} of ${formatBytes(wanted)}`
-        : formatBytes(download.bytesDownloaded)
-    switch (download.status) {
-      case 'downloading':
-        detail = [
-          wanted > 0 && `${percent}%`,
-          sizes,
-          download.timeLeftSeconds !== undefined && formatEta(download.timeLeftSeconds)
-        ]
-          .filter(Boolean)
-          .join(' · ')
-        break
-      case 'queued':
-        detail = `${schedule?.enabled && !scheduleWindow(schedule, now).allowed ? (scheduleMessage(schedule, now) ?? 'Waiting for a turn') : 'Waiting for a turn'} · ${sizes}`
-        break
-      case 'paused':
-        detail = wanted > 0 ? `Paused at ${percent}% · ${sizes}` : `Paused · ${sizes}`
-        break
-      default:
-        detail = describeError(download.error ?? 'Something went wrong')
-        tone = 'text-[var(--color-danger)]'
-    }
-  }
-  // Its next step, if it has one: the first thing its menu offers.
-  const actionId = rowAction(item)
-  const action = actionId ? ACTION_META[actionId] : null
-
-  // The bar shows each network's share of the file in its color; a failed one shows in red.
-  const segments =
-    finished || isFinished(item) || !networkVisual
-      ? []
-      : item.status === 'error'
-        ? [
-            {
-              id: 'error',
-              share: item.bytesDownloaded / (wanted || 1),
-              color: 'var(--color-danger)'
-            }
-          ]
-        : item.networks
-            .filter((network) => network.bytesDownloaded > 0)
-            .map((network) => ({
-              id: network.id,
-              share: network.bytesDownloaded / (wanted || 1),
-              color: networkVisual(network.id, network.kind, network.label).solid
-            }))
-
-  // Which networks it's on, at a glance, when it isn't on all of them. One on every network says
-  // nothing new, so it shows none.
-  const dots =
-    !finished &&
-    networkVisual &&
-    !isFinished(item) &&
-    item.networks.some((network) => !network.enabled)
-      ? item.networks.map((network) => {
-          const visual = networkVisual(network.id, network.kind, network.label)
-          return {
-            id: network.id,
-            on: network.enabled,
-            color: visual.solid,
-            name: visual.name,
-            // Its speed while it runs; otherwise whether it's on, or what's stopping it.
-            state: !network.enabled
-              ? 'Off'
-              : network.status !== 'on'
-                ? networkStatusText(network.status, network.transfer)
-                : item.status === 'downloading'
-                  ? formatSpeed(network.speedBytesPerSec)
-                  : 'On'
-          }
-        })
-      : null
-  const speed =
-    !finished && !isFinished(item) && item.status === 'downloading'
-      ? formatSpeed(item.speedBytesPerSec)
-      : null
-
-  return (
-    <div
-      data-selected={selected || undefined}
-      className={cn(
-        'group/download-row my-0.5 -mx-2 flex items-center gap-3 rounded-lg px-2 py-3 transition-colors',
-        selected
-          ? 'bg-primary/10 hover:bg-primary/15 focus-within:bg-primary/15'
-          : 'hover:bg-secondary focus-within:bg-secondary'
-      )}
-    >
-      <Checkbox
-        aria-label={`Select ${item.fileName}`}
-        checked={selected}
-        onCheckedChange={(on) => onSelect(item.id, on)}
-      />
-      <button
-        type="button"
-        onClick={() => onOpen(item.id)}
-        className="flex min-w-0 flex-1 items-center gap-3 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border-[0.5px] border-border bg-card font-mono text-[10px] font-semibold text-muted-foreground">
-          {badge}
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="truncate font-sans text-[14px] leading-tight font-medium">
-              {item.fileName}
-            </span>
-            {item.kind === 'torrent' && <TorrentBadge />}
-            {(dots || speed) && (
-              <div className="ml-auto flex shrink-0 items-center gap-2.5 pl-2">
-                {dots && (
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <span
-                          role="img"
-                          aria-label={dots.map((dot) => `${dot.name} ${dot.state}`).join(', ')}
-                          className="flex items-center gap-1 rounded-full border border-border px-1.5 py-1"
-                        >
-                          {dots.map((dot) => (
-                            <span
-                              key={dot.id}
-                              className={cn(
-                                'size-1.5 rounded-full',
-                                !dot.on && 'bg-muted-foreground/30'
-                              )}
-                              style={dot.on ? { background: dot.color } : undefined}
-                            />
-                          ))}
-                        </span>
-                      }
-                    />
-                    <TooltipContent>
-                      <div className="grid grid-cols-[auto_auto_auto] items-center gap-x-2 gap-y-1">
-                        {dots.map((dot) => (
-                          <Fragment key={dot.id}>
-                            <span
-                              className={cn(
-                                'size-2 rounded-full',
-                                !dot.on && 'border border-current opacity-60'
-                              )}
-                              style={dot.on ? { background: dot.color } : undefined}
-                            />
-                            <span>{dot.name}</span>
-                            <span className="pl-3 text-right font-mono tabular-nums opacity-80">
-                              {dot.state}
-                            </span>
-                          </Fragment>
-                        ))}
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-                {speed && (
-                  <span className="font-mono text-[12.5px] font-medium tabular-nums">{speed}</span>
-                )}
-              </div>
-            )}
-          </div>
-          {segments.length > 0 && (
-            <div
-              className={cn(
-                'flex h-1 overflow-hidden rounded-full bg-muted',
-                // Not moving: the colors stay, faded, so it doesn't read as running.
-                !isFinished(item) &&
-                  (item.status === 'paused' || item.status === 'queued') &&
-                  'opacity-40'
-              )}
-            >
-              {segments.map((segment) => (
-                <div
-                  key={segment.id}
-                  style={{
-                    width: `${Math.min(100, segment.share * 100)}%`,
-                    background: segment.color
-                  }}
-                />
-              ))}
-            </div>
-          )}
-          <div className={`truncate font-mono text-[11.5px] leading-tight ${tone}`}>{detail}</div>
-        </div>
-      </button>
-      {action && (
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                aria-label={`${action.label} ${item.fileName}`}
-                aria-busy={working}
-                disabled={working}
-                onClick={() => {
-                  setWorking(true)
-                  void onPerform(actionId!, [item]).finally(() => setWorking(false))
-                }}
-                className="text-muted-foreground group-hover/download-row:text-foreground"
-              >
-                <action.icon />
-              </Button>
-            }
-          />
-          <TooltipContent>
-            {working && action.working ? action.working : action.label}
-          </TooltipContent>
-        </Tooltip>
-      )}
-      <button
-        type="button"
-        aria-label={`Open ${item.fileName}`}
-        onClick={() => onOpen(item.id)}
-        className="rounded-md p-1 text-muted-foreground transition-colors group-hover/download-row:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-      >
-        <ChevronRight className="size-4" />
-      </button>
-    </div>
-  )
-})

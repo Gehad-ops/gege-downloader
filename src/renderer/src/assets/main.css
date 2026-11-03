@@ -19,33 +19,45 @@
 :root {
   color-scheme: light dark;
 
-  --bg: #ffffff;
-  --bg-secondary: #fafafa;
-  --bg-tertiary: #f0f0f0;
+  /* The redesigned dashboard, light counterpart: a soft canvas with white cards, a teal accent
+     and the same teal-to-blue accents as the dark design. */
+  --bg: #f5f7fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #eef1f6;
   --input-bg: #ffffff;
-  --track-bg: #e4e4e6;
+  --track-bg: #e7ebf1;
 
-  --text: #1d1d1f;
-  --text-secondary: #6e6e73;
-  /* #8a8a8e (the original design value) is only 3.45:1 against this screen's white/near-white
-     backgrounds — fails WCAG AA (4.5:1) for the 9-13px text this token is used at throughout.
-     Darkened to the lightest gray that still clears 4.5:1. */
-  --text-tertiary: #737377;
+  --text: #0f172a;
+  --text-secondary: #5b6474;
+  --text-tertiary: #6b7484;
 
-  --border: #e0e0e2;
-  --border-subtle: #ececee;
-  --border-strong: #b9b9bb;
-  --footer-border: #d8d8da;
+  --border: #e2e6ee;
+  --border-subtle: #edf0f5;
+  --border-strong: #c9d0dc;
+  --footer-border: #e2e6ee;
 
-  --icon-muted: #c2c2c6;
-  --icon-muted-strong: #b0b0b2;
-  --scrollbar-thumb: #d0d0d2;
+  /* Chrome surfaces: the sidebar and status bar, the cards, and the active nav item. */
+  --panel: #ffffff;
+  --card: #ffffff;
+  --card-border: #e2e6ee;
+  --active-item: #e6f7f4;
+  --active-ring: #9fe6db;
 
-  --checkbox-shadow: rgba(0, 0, 0, 0.15);
-  --checkbox-inset-shadow: rgba(0, 0, 0, 0.04);
+  --icon-muted: #c3cad5;
+  --icon-muted-strong: #9aa3b2;
+  --scrollbar-thumb: #c8ced8;
 
-  --hero-bg: linear-gradient(180deg, #fbfbfc 0%, #f4f5f7 100%);
-  --hero-border: #e2e4e8;
+  --checkbox-shadow: rgba(0, 0, 0, 0.18);
+  --checkbox-inset-shadow: rgba(0, 0, 0, 0.05);
+
+  --hero-bg: linear-gradient(180deg, #ffffff 0%, #f0f4f8 100%);
+  --hero-border: #e2e6ee;
+
+  --select-bg: #d9f5f0;
+  --select-line: #9fe6db;
+  --hover-bg: #f0f3f8;
+  --ok: #16a34a;
+  --warn: #d97706;
 
   /* Network + brand palette — light-mode originals, adapted to sit on a white ground. */
   --color-wifi: #1f8a70;
@@ -91,21 +103,54 @@
   --swatch-coral: #c4572a;
   --swatch-coral-onsolid: #ffffff;
 
-  --color-accent: #d97706;
+  --color-accent: #0e9f8c;
   --color-accent-onsolid: #ffffff;
-  --color-success: #1f8a70;
+  --color-success: #16a34a;
 
   --color-danger: #dc2626;
   --color-danger-bg: #fef2f2;
   --color-danger-border: #fecaca;
 
-  /* Throughput chart's total-line color — the merge node's tone from the app icon, not raw
-     text-black, so the outline reads as part of the brand instead of a harsh axis line. */
-  --node-accent: #5f6e78;
+  --node-accent: #0e9f8c;
+  --chart-teal: #14b8a6;
+  --chart-blue: #6366f1;
+  --live-card-bg: radial-gradient(120% 140% at 0% 0%, #e6f7f4 0%, #ffffff 55%);
 
-  /* Shared corner radius for shadcn/Base UI components — matches the 8px most hand-styled
-     buttons/cards already use (see theme.ts), so new and existing components read as one system. */
-  --radius: 8px;
+  --status-downloading-bg: #e6f7f4;
+  --status-downloading-text: #0b7f70;
+  --status-finished-bg: #e9f9ef;
+  --status-finished-text: #15803d;
+  --status-error-bg: #fef2f2;
+  --status-error-text: #b91c1c;
+  --status-paused-bg: #fdf4e7;
+  --status-paused-text: #a86813;
+  --status-queued-bg: #f0f2f6;
+  --status-queued-text: #5b6474;
+
+  /* Per-type hues: the dot in the sidebar, the row tile and the type chip. */
+  --type-video: #6d7cf5;
+  --type-video-bg: #eceefe;
+  --type-video-text: #4c56c9;
+  --type-audio: #d94f9a;
+  --type-audio-bg: #fdeef6;
+  --type-audio-text: #b02f78;
+  --type-images: #d98a1f;
+  --type-images-bg: #fdf4e7;
+  --type-images-text: #a86813;
+  --type-documents: #2f8fe0;
+  --type-documents-bg: #eaf5fe;
+  --type-documents-text: #1f6fb5;
+  --type-archives: #0e9f8c;
+  --type-archives-bg: #e6f7f4;
+  --type-archives-text: #0b7f70;
+  --type-programs: #8b5cf6;
+  --type-programs-bg: #f3efff;
+  --type-programs-text: #7038e0;
+  --type-other: #7c8798;
+  --type-other-bg: #f0f2f6;
+  --type-other-text: #5b6474;
+
+  --radius: 10px;
 }
 
 /* Maps shadcn/Base UI's expected semantic tokens onto Plexo's existing palette above, instead of
@@ -114,8 +159,10 @@
    property *values* (e.g. --color-accent) without colliding with their names, since only the
    left-hand names below become Tailwind tokens. */
 @theme inline {
-  --font-sans: 'Manrope', -apple-system, 'SF Pro Text', 'Helvetica Neue', Helvetica, sans-serif;
-  --font-mono: 'Roboto Mono', 'SF Mono', ui-monospace, Menlo, monospace;
+  --font-sans:
+    'Inter', 'Segoe UI Variable Text', 'Segoe UI', -apple-system, 'SF Pro Text', 'Helvetica Neue',
+    Helvetica, 'Manrope', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', ui-monospace, Menlo, monospace;
 
   --color-background: var(--bg);
   --color-foreground: var(--text);
@@ -144,30 +191,43 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --hero-bg: linear-gradient(180deg, #202325 0%, #1b1e20 100%);
-    --hero-border: #2b2f33;
-    /* Graphite instrument-panel background — exact hex values from the "Plexo v2" design doc. */
-    --bg: #1b1e20;
-    --bg-secondary: #202325;
-    --bg-tertiary: #202325;
-    --input-bg: #242729;
-    --track-bg: #262a2d;
+    /* The redesigned dashboard, exactly as in the design: a near-black canvas, slightly lighter
+       sidebar and cards, hairline borders and a teal accent. */
+    --hero-bg: linear-gradient(180deg, #12151c 0%, #0e1117 100%);
+    --hero-border: #1e232d;
+    --bg: #0b0d12;
+    --bg-secondary: #12151c;
+    --bg-tertiary: #1b202b;
+    --input-bg: #12151c;
+    --track-bg: #1b202b;
 
-    --text: #eae7e2;
-    --text-secondary: #a9adb2;
-    --text-tertiary: #8d9196;
+    --text: #e8ecf3;
+    --text-secondary: #9aa3b5;
+    --text-tertiary: #8d96a8;
 
-    --border: #2b2f33;
-    --border-subtle: #23262a;
-    --border-strong: #33383c;
-    --footer-border: #2b2f33;
+    --border: #1e232d;
+    --border-subtle: #151922;
+    --border-strong: #2e3647;
+    --footer-border: #151922;
 
-    --icon-muted: #33383c;
-    --icon-muted-strong: #3a3f44;
-    --scrollbar-thumb: #3a3f44;
+    --panel: #0d1016;
+    --card: #12151c;
+    --card-border: #1e232d;
+    --active-item: #16202a;
+    --active-ring: #24413f;
+
+    --icon-muted: #39404f;
+    --icon-muted-strong: #5c6577;
+    --scrollbar-thumb: #2a3140;
 
     --checkbox-shadow: rgba(0, 0, 0, 0.4);
     --checkbox-inset-shadow: rgba(0, 0, 0, 0.3);
+
+    --select-bg: #14302e;
+    --select-line: #24413f;
+    --hover-bg: #181d27;
+    --ok: #4ade80;
+    --warn: #f5a94a;
 
     --color-wifi: #4ea89a;
     --color-wifi-bg: #22312e;
@@ -210,15 +270,51 @@
     --swatch-coral: #d99168;
     --swatch-coral-onsolid: #241209;
 
-    --color-accent: #d8a44c;
-    --color-accent-onsolid: #1b1408;
-    --color-success: #4ea89a;
+    --color-accent: #3ddcc4;
+    --color-accent-onsolid: #06231f;
+    --color-success: #4ade80;
 
-    --color-danger: #eda3a3;
-    --color-danger-bg: #2c1c1c;
-    --color-danger-border: #4a2a2a;
+    --color-danger: #ff6b6b;
+    --color-danger-bg: #2a1418;
+    --color-danger-border: #4a2027;
 
-    --node-accent: #f7f4ef;
+    --node-accent: #3ddcc4;
+    --chart-teal: #3ddcc4;
+    --chart-blue: #7c8cff;
+    --live-card-bg: radial-gradient(120% 140% at 0% 0%, #14262b 0%, #12151c 55%);
+
+    --status-downloading-bg: #14302e;
+    --status-downloading-text: #6bebd6;
+    --status-finished-bg: #12281b;
+    --status-finished-text: #6ee79a;
+    --status-error-bg: #2a1418;
+    --status-error-text: #ff8b8b;
+    --status-paused-bg: #332615;
+    --status-paused-text: #ffc078;
+    --status-queued-bg: #1c222d;
+    --status-queued-text: #aab3c2;
+
+    --type-video: #7c8cff;
+    --type-video-bg: #1a1f3d;
+    --type-video-text: #9aa8ff;
+    --type-audio: #f26fb0;
+    --type-audio-bg: #331b2a;
+    --type-audio-text: #ff9fd0;
+    --type-images: #f5a94a;
+    --type-images-bg: #332615;
+    --type-images-text: #ffc078;
+    --type-documents: #6db7ff;
+    --type-documents-bg: #152a3d;
+    --type-documents-text: #8ecbff;
+    --type-archives: #3ddcc4;
+    --type-archives-bg: #14302e;
+    --type-archives-text: #6bebd6;
+    --type-programs: #b58cff;
+    --type-programs-bg: #201a33;
+    --type-programs-text: #c9a9ff;
+    --type-other: #8d96a8;
+    --type-other-bg: #1c222d;
+    --type-other-text: #aab3c2;
   }
 }
 
@@ -259,6 +355,49 @@
   ::-webkit-scrollbar-thumb {
     background-color: var(--scrollbar-thumb);
     border-radius: 9999px;
+  }
+}
+
+@layer components {
+  /* The primary action and the live progress fill: teal into blue, exactly as in the design. */
+  .accent-gradient {
+    background: linear-gradient(135deg, var(--chart-teal) 0%, #5fa8f0 100%);
+  }
+
+  .progress-flow {
+    background-image: linear-gradient(90deg, var(--chart-teal), var(--chart-blue));
+    background-size: 200% 100%;
+    animation: plexo-flow 2s linear infinite;
+  }
+
+  .live-dot {
+    background: var(--chart-teal);
+    animation: plexo-live 1.6s infinite;
+  }
+}
+
+/* On a short window the list matters more than the summary cards. */
+@media (max-height: 700px) {
+  .stats-row {
+    display: none;
+  }
+}
+
+@keyframes plexo-flow {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes plexo-live {
+  0% {
+    box-shadow: 0 0 0 0 rgba(61, 220, 196, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgba(61, 220, 196, 0);
   }
 }
 

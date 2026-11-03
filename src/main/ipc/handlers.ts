@@ -21,6 +21,8 @@ import { DownloadManager } from '../download/downloadManager'
 import { getDefaultDownloadsDir, getHomeDir } from '../download/paths'
 import { listHistory } from '../download/history'
 import { probeUrl } from '../download/probe'
+import { extractPageLinks } from '../download/pageLinks'
+import { resolveLinks, resolveLinksDeep } from '../download/resolve'
 import { deviceBindingSupported } from '../network/deviceBinding'
 import { pendingLink, pendingLinks, releaseLink } from '../openLinks'
 import { NetworkMonitor } from '../network/interfaces'
@@ -64,6 +66,15 @@ async function freeSpace(dir: string): Promise<number | null> {
   try {
     const stats = await statfs(dir)
     return stats.bavail * stats.bsize
+  } catch {
+    return null
+  }
+}
+
+async function diskSpace(dir: string): Promise<{ free: number; total: number } | null> {
+  try {
+    const stats = await statfs(dir)
+    return { free: stats.bavail * stats.bsize, total: stats.blocks * stats.bsize }
   } catch {
     return null
   }
@@ -134,7 +145,11 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): Down
         slowMode: settings.slowMode ?? false,
         slowModeSpeed: settings.slowModeSpeed ?? DEFAULT_SLOW_MODE_SPEED,
         speedUnit: settings.speedUnit ?? 'bytes',
-        destinationDir: destinationExists ? destinationDir : undefined
+        destinationDir: destinationExists ? destinationDir : undefined,
+        onDownloadComplete: settings.onDownloadComplete ?? 'none',
+        whenQueueFinishes: settings.whenQueueFinishes ?? 'none',
+        networkMode: settings.networkMode ?? 'combine',
+        networkRotation: settings.networkRotation ?? 0
       } satisfies InitialState
     } catch (error) {
       console.error('[plexo] failed to read initial state', error)
@@ -147,7 +162,11 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): Down
         downloadsAtOnce: DOWNLOADS_AT_ONCE.default,
         slowMode: false,
         slowModeSpeed: DEFAULT_SLOW_MODE_SPEED,
-        speedUnit: 'bytes'
+        speedUnit: 'bytes',
+        onDownloadComplete: 'none',
+        whenQueueFinishes: 'none',
+        networkMode: 'combine',
+        networkRotation: 0
       } satisfies InitialState
     }
   })
@@ -157,6 +176,12 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): Down
   })
 
   handle('probeUrl', async (_event, url) => probeUrl(url))
+
+  handle('resolveLinks', async (_event, url) => resolveLinks(url))
+
+  handle('deepResolve', async (_event, url) => resolveLinksDeep(url))
+
+  handle('extractLinks', async (_event, url) => extractPageLinks(url))
 
   handle('chooseDestinationFolder', async (_event, defaultPath) => {
     const window = getWindow()
@@ -218,6 +243,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): Down
   handle('resetNetworkUsage', async (_event, id) => manager.resetNetworkUsage(id))
 
   handle('freeSpace', async (_event, dir) => freeSpace(dir))
+  handle('diskSpace', async (_event, dir) => diskSpace(dir))
 
   handle('torrentFiles', async (_event, id) => manager.torrentFiles(id))
   handle('chooseTorrentFiles', async (_event, id, selected) =>
@@ -231,6 +257,8 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): Down
   handle('resumeDownload', async (_event, id) => {
     manager.resume(id)
   })
+
+  handle('moveDownload', async (_event, id, direction) => manager.moveQueued(id, direction))
 
   handle('relinkDownload', async (_event, id, url) => manager.relink(id, url))
 

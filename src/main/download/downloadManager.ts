@@ -24,6 +24,8 @@ import {
   type HttpDownloadState,
   type NetworkInterfaceInfo,
   type NetworkStatus,
+  type OnDownloadComplete,
+  type WhenQueueFinishes,
   type HttpProbeResult,
   type StartDownloadRequest,
   type StartHttpDownloadRequest,
@@ -36,6 +38,7 @@ import {
 } from '../../shared/types'
 import { Limits } from '../network/limits'
 import { loadSettings } from '../settings'
+import { performQueueAction } from '../systemActions'
 import { addToHistory, findInHistory, removeFromHistory } from './history'
 import { testKnobs } from '../testKnobs'
 import { DownloadFile } from './downloadFile'
@@ -364,6 +367,9 @@ export class DownloadManager {
   private awakeBlocker: number | null = null
   /** How many downloads may run at once; the rest wait, queued (see pump). */
   private downloadsAtOnce = DOWNLOADS_AT_ONCE.default
+  /** What to do with each download as it finishes, and once the queue empties (see afterCompleted). */
+  private onDownloadComplete: OnDownloadComplete = 'none'
+  private whenQueueFinishes: WhenQueueFinishes = 'none'
   /** Speed and data limits, for every download together. */
   readonly limits = new Limits(() => this.limitsChanged())
 
@@ -402,6 +408,8 @@ export class DownloadManager {
       }
     }
     this.downloadsAtOnce = settings.downloadsAtOnce ?? DOWNLOADS_AT_ONCE.default
+    this.onDownloadComplete = settings.onDownloadComplete ?? 'none'
+    this.whenQueueFinishes = settings.whenQueueFinishes ?? 'none'
     this.limits.configure(settings)
     await this.refreshSchedule()
     this.limitsChanged()
@@ -517,6 +525,31 @@ export class DownloadManager {
     runtime.state.queuedAt = front
       ? Math.min(Date.now(), ...places) - 1
       : Math.max(Date.now(), ...places.map((place) => place + 1))
+  }
+
+  /** Moves a queued download one place up or down the queue, by renumbering the queued ones'
+   * places. Running and finished downloads aren't in the queue and aren't touched. */
+  async moveQueued(id: string, direction: 'up' | 'down'): Promise<void> {
+    await this.initialization
+    const queued = [...this.runtimes.values()]
+      .filter((runtime) => runtime.state.status === 'queued')
+      .sort((a, b) => (a.state.queuedAt ?? 0) - (b.state.queuedAt ?? 0))
+    const from = queued.findIndex((runtime) => runtime.state.id === id)
+    if (from < 0) return
+    const to = direction === 'up' ? from - 1 : from + 1
+    if (to < 0 || to >= queued.length) return
+    const [moved] = queued.splice(from, 1)
+    queued.splice(to, 0, moved)
+    // Renumbered well before "now", so a download queued later still goes to the end.
+    const base = Date.now() - 1_000_000
+    await Promise.all(
+      queued.map((runtime, index) => {
+        runtime.state.queuedAt = base + index
+        this.pushUpdate(runtime)
+        return this.persistNow(runtime)
+      })
+    )
+    this.pump()
   }
 
   private downloadsRoot(): string {
@@ -676,15 +709,17 @@ export class DownloadManager {
         }
         this.runtimes.set(runtime.state.id, runtime)
         // Finished before the relaunch (or found to be): history keeps it from here.
-        if (runtime.state.status === 'completed') await this.moveToHistory(runtime)
+        if (runtime.state.status === 'completed') await this.moveToHistory(runtime, false)
         else await this.persistNow(runtime)
       })
     )
   }
 
   /** A finished download leaves the list of running ones for history, with its work units: a
-   * download that is done needs none of them. Its saved state goes only once history has it. */
-  private async moveToHistory(runtime: DownloadRuntime): Promise<void> {
+   * download that is done needs none of them. Its saved state goes only once history has it.
+   * `notify` is false for one restored already-finished: the user's post-download choice is for a
+   * download that finishes while they are there, not for every old one on launch. */
+  private async moveToHistory(runtime: DownloadRuntime, notify = true): Promise<void> {
     let entry: FinishedDownload
     if (runtime.kind === 'http') {
       const { blocks: omittedBlocks, streams: omittedStreams, ...state } = runtime.state
@@ -715,6 +750,17 @@ export class DownloadManager {
     this.runtimes.delete(runtime.state.id)
     await this.removePersistedDownload(runtime, false)
     this.historyChanged()
+    if (notify) this.afterCompleted(runtime.state.id)
+  }
+
+  /** What the user set to happen now a download has finished: act on it, and — if it was the last
+   * one — do the "when everything finishes" action. */
+  private afterCompleted(id: string): void {
+    if (this.onDownloadComplete === 'open') void this.open(id).catch(() => {})
+    else if (this.onDownloadComplete === 'reveal') void this.reveal(id).catch(() => {})
+    if (this.whenQueueFinishes !== 'none' && this.runtimes.size === 0) {
+      performQueueAction(this.whenQueueFinishes)
+    }
   }
 
   private historyChanged(): void {

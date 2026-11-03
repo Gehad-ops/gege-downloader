@@ -18,6 +18,9 @@ export type Fault =
   | 'wrongStart'
   /** 206 with a correct header but one byte more body than the range. */
   | 'overlong'
+  /** 206 whose Content-Range (and body) run to the end of the file — a host that honours the
+   * start of a range but not its end, as some file hosts do. */
+  | 'wideRange'
   /** 206 with no Content-Range header. */
   | 'noContentRange'
   /** Sends headers, then nothing, forever. */
@@ -257,11 +260,14 @@ export class Origin {
       status = 206
       if (fault !== 'noContentRange') {
         const shownStart = fault === 'wrongStart' ? start + 1 : start
-        headers['Content-Range'] = `bytes ${shownStart}-${end}/${total}`
+        const shownEnd = fault === 'wideRange' ? total - 1 : end
+        headers['Content-Range'] = `bytes ${shownStart}-${shownEnd}/${total}`
       }
     }
 
     let bodyEnd = end + 1 // exclusive
+    // A host that ignores the end of the range sends the whole rest of the file.
+    if (fault === 'wideRange') bodyEnd = total
     if (fault === 'overlong') bodyEnd = Math.min(bodyEnd + 1, total)
     if (typeof fault === 'object' && 'endAfter' in fault) {
       bodyEnd = Math.min(bodyEnd, start + fault.endAfter)

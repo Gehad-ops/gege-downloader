@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, Network } from 'lucide-react'
 import { useState } from 'react'
 import { useNetworkUsage } from '../hooks/useNetworks'
 import { useNetworkVisuals } from '../hooks/useNetworkVisuals'
@@ -14,10 +14,13 @@ import { TruncatedText } from './TruncatedText'
  * name for it, the limits set on it), on the right what it's doing (its speed). Which
  * networks a download uses is picked in New download, which remembers the last pick. */
 export function NetworksMenu({
-  onOpenLimits
+  onOpenLimits,
+  compact = false
 }: {
   /** Opens Speed & data limits on that network's page, or General for null. */
   onOpenLimits: (page: string | null) => void
+  /** A single glyph instead of the dots, count and speed, for a crowded toolbar. */
+  compact?: boolean
 }): React.JSX.Element {
   const formatSpeed = useFormatSpeed()
   const formatSpeedLimit = useFormatSpeedLimit()
@@ -41,30 +44,45 @@ export function NetworksMenu({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
-        render={<Button type="button" variant="secondary" className="gap-2.5 px-3 text-[13px]" />}
+        render={
+          <Button
+            type="button"
+            variant="secondary"
+            aria-label={compact ? 'Networks' : undefined}
+            className={compact ? 'size-9 rounded-[10px] px-0' : 'gap-2.5 px-3 text-[13px]'}
+          />
+        }
       >
-        <span className="flex gap-1" aria-hidden>
-          {interfaces.slice(0, 4).map((iface) => (
-            <span
-              key={iface.id}
-              className="size-2 rounded-full"
-              style={{ background: networkVisual(iface.id, iface.kind, iface.displayName).solid }}
-            />
-          ))}
-        </span>
-        {interfaces.length === 0 ? (
-          <span className="text-[var(--color-danger)]">No network</span>
+        {compact ? (
+          <Network className="size-4" aria-hidden />
         ) : (
           <>
-            {interfaces.length} {interfaces.length === 1 ? 'network' : 'networks'}
-            {total > 0 && (
-              <span className="font-mono text-[11.5px] text-muted-foreground">
-                {formatSpeed(total)}
-              </span>
+            <span className="flex gap-1" aria-hidden>
+              {interfaces.slice(0, 4).map((iface) => (
+                <span
+                  key={iface.id}
+                  className="size-2 rounded-full"
+                  style={{
+                    background: networkVisual(iface.id, iface.kind, iface.displayName).solid
+                  }}
+                />
+              ))}
+            </span>
+            {interfaces.length === 0 ? (
+              <span className="text-[var(--color-danger)]">No network</span>
+            ) : (
+              <>
+                {interfaces.length} {interfaces.length === 1 ? 'network' : 'networks'}
+                {total > 0 && (
+                  <span className="font-mono text-[11.5px] text-muted-foreground">
+                    {formatSpeed(total)}
+                  </span>
+                )}
+              </>
             )}
+            <ChevronDown className="size-3.5 text-muted-foreground" />
           </>
         )}
-        <ChevronDown className="size-3.5 text-muted-foreground" />
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[340px] gap-0 p-0">
         <div className="border-b-[0.5px] border-border px-4 py-3 text-[14px] font-semibold">

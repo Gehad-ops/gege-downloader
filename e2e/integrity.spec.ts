@@ -35,6 +35,19 @@ test.describe('transient server faults are retried to a correct file @smoke', ()
   }
 })
 
+test('a host that ignores the range end and answers with a wider range is tolerated', async ({
+  plexo,
+  serve
+}) => {
+  const origin = await serve({ size: SIZE })
+  // Every chunk gets a range running to the end of the file, as this host does.
+  origin.setRule(({ range }) => (range && !isProbe(range) ? 'wideRange' : 'ok'))
+
+  await plexo.start(origin.url(), origin.sha256, { connections: 2 })
+  // The block takes its own bytes and drops the rest; the file is still correct.
+  await plexo.waitForStatus('completed')
+})
+
 test.describe('a connection stuck at a crawl @smoke', () => {
   test.use({ appEnv: { PLEXO_E2E_SLOW_WARMUP_MS: '500', PLEXO_E2E_SLOW_FOR_MS: '1500' } })
 

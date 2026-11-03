@@ -263,6 +263,9 @@ export function downloadChunk(options: ChunkDownloadOptions): Promise<void> {
 
           // A 206 says where in the file these bytes belong — check it lines up
           // with what we asked for before writing any of them.
+          // Some hosts answer with a range that ends past what was asked (they honour the start,
+          // not the end). That is fine: the block only takes its own bytes (see the data handler).
+          let declaredOverlong = false
           if (status === 206) {
             if (!served) {
               fail(new Error('Server sent a 206 without a usable Content-Range header'))
@@ -278,15 +281,7 @@ export function downloadChunk(options: ChunkDownloadOptions): Promise<void> {
               res.resume()
               return
             }
-            if (rangeEnd !== null && served.end > rangeEnd) {
-              fail(
-                new Error(
-                  `Server returned more than the requested range: through byte ${served.end}, asked through ${rangeEnd}`
-                )
-              )
-              res.resume()
-              return
-            }
+            if (rangeEnd !== null && served.end > rangeEnd) declaredOverlong = true
           }
 
           onResponse?.({ ttfbMs: Date.now() - sentAt, reusedSocket: req.reusedSocket })
@@ -316,6 +311,23 @@ export function downloadChunk(options: ChunkDownloadOptions): Promise<void> {
             if (--holds > 0 || settled || bodyEnded) return
             resetWatchdog()
             res.resume()
+          }
+
+          // Every byte the block needs is in, yet the server is still sending (it declared a
+          // wider range). Stop the response and keep what we have.
+          const complete = (): void => {
+            if (settled) return
+            clearWatchdog()
+            bodyEnded = true
+            req.off('error', dropped)
+            res.off('error', dropped)
+            req.on('error', () => {})
+            res.on('error', () => {})
+            req.destroy()
+            onWriteWait?.(true)
+            fileStream.once('finish', () => onWriteWait?.(false))
+            fileStream.once('close', () => finish(resolve))
+            fileStream.end()
           }
 
           // Written by hand rather than piped so an overlong body can be cut off
@@ -355,8 +367,13 @@ export function downloadChunk(options: ChunkDownloadOptions): Promise<void> {
               }
             }
 
-            if (usable.length < chunk.length) {
-              fail(new Error('Server sent more data than the requested range'))
+            if (expectedBytes !== null && bytesDownloaded >= expectedBytes) {
+              // The block has all its bytes. A response that declared a wider range is stopped
+              // here; otherwise a body longer than its own header is malformed and gets retried.
+              if (declaredOverlong) complete()
+              else if (usable.length < chunk.length) {
+                fail(new Error('Server sent more data than the requested range'))
+              }
             }
           })
 

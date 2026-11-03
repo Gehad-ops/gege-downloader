@@ -29,6 +29,9 @@ const plexoApi = {
   openNetworkSettings: () => invoke('openNetworkSettings'),
   updateSettings: (patch: AppSettings) => invoke('updateSettings', patch),
   probeUrl: (url: string) => invoke('probeUrl', url),
+  resolveLinks: (url: string) => invoke('resolveLinks', url),
+  deepResolve: (url: string) => invoke('deepResolve', url),
+  extractLinks: (url: string) => invoke('extractLinks', url),
   chooseDestinationFolder: (defaultPath: string) => invoke('chooseDestinationFolder', defaultPath),
   chooseTorrentFile: () => invoke('chooseTorrentFile'),
   /** Where a file dropped on the window is on disk ('' for one that isn't a file). */
@@ -44,11 +47,14 @@ const plexoApi = {
   networkUsage: () => invoke('networkUsage'),
   resetNetworkUsage: (id) => invoke('resetNetworkUsage', id),
   freeSpace: (dir: string) => invoke('freeSpace', dir),
+  diskSpace: (dir: string) => invoke('diskSpace', dir),
   torrentFiles: (downloadId: string) => invoke('torrentFiles', downloadId),
   chooseTorrentFiles: (downloadId: string, selected: number[]) =>
     invoke('chooseTorrentFiles', downloadId, selected),
   pauseDownload: (downloadId: string) => invoke('pauseDownload', downloadId),
   resumeDownload: (downloadId: string) => invoke('resumeDownload', downloadId),
+  moveDownload: (downloadId: string, direction: 'up' | 'down') =>
+    invoke('moveDownload', downloadId, direction),
   relinkDownload: (downloadId: string, url: string) => invoke('relinkDownload', downloadId, url),
   setDownloadNetwork: (downloadId: string, networkId: string, enabled: boolean) =>
     invoke('setDownloadNetwork', downloadId, networkId, enabled),

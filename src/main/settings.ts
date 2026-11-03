@@ -90,6 +90,27 @@ function sanitizeSettings(parsed: unknown): AppSettings {
     settings.speedUnit = parsed.speedUnit
   }
   if (parsed.browserExtensionUsed === true) settings.browserExtensionUsed = true
+  if (
+    parsed.onDownloadComplete === 'none' ||
+    parsed.onDownloadComplete === 'open' ||
+    parsed.onDownloadComplete === 'reveal'
+  ) {
+    settings.onDownloadComplete = parsed.onDownloadComplete
+  }
+  if (
+    parsed.whenQueueFinishes === 'none' ||
+    parsed.whenQueueFinishes === 'quit' ||
+    parsed.whenQueueFinishes === 'sleep' ||
+    parsed.whenQueueFinishes === 'shutdown'
+  ) {
+    settings.whenQueueFinishes = parsed.whenQueueFinishes
+  }
+  if (parsed.networkMode === 'combine' || parsed.networkMode === 'alternate') {
+    settings.networkMode = parsed.networkMode
+  }
+  if (Number.isInteger(parsed.networkRotation) && (parsed.networkRotation as number) >= 0) {
+    settings.networkRotation = parsed.networkRotation as number
+  }
   return settings
 }
 

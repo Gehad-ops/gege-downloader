@@ -1,22 +1,37 @@
-import type { ProbeResult } from '@shared/types'
+import type { PageLinks, ProbeResult } from '@shared/types'
 import { cn } from 'cn'
-import { AlertTriangle, ChevronLeft, ChevronRight, FolderOpen, Globe, Lock, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import {
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  FolderOpen,
+  Globe,
+  Layers,
+  ListPlus,
+  Lock,
+  X
+} from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFormatSpeedLimit } from '../hooks/useFormatSpeed'
 import { useNetworkUsage } from '../hooks/useNetworks'
 import { useNetworkVisuals } from '../hooks/useNetworkVisuals'
 import { useDownloadSchedule } from '../hooks/useDownloadSchedule'
 import { useAppStore } from '../store/useAppStore'
 import {
-  acceptedLink,
+  acceptedLinks,
   describeError,
   describeFileCount,
   fileExtensionBadge,
+  fileNameFromPath,
   formatBytes,
   toDisplayPath
 } from '../utils/format'
+import { expandBatchUrl } from '../utils/batchUrl'
+import { categoryOfName } from '../utils/categories'
 import { Button } from './ui/button'
+import { Checkbox } from './ui/checkbox'
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog'
+import { Switch } from './ui/switch'
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group'
 import { TorrentFileList } from './TorrentFiles'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -25,6 +40,13 @@ type ProbeState =
   | { status: 'idle' }
   | { status: 'probing' }
   | { status: 'ready'; result: ProbeResult }
+  | { status: 'error'; message: string }
+
+/** Reading a page's links for "Download all links". */
+type GrabState =
+  | { status: 'idle' }
+  | { status: 'scanning' }
+  | { status: 'ready'; page: PageLinks }
   | { status: 'error'; message: string }
 
 const PROBE_DEBOUNCE_MS = 600
@@ -81,9 +103,32 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
   const networkVisual = useNetworkVisuals()
   const networkPreferences = useAppStore((store) => store.networkPreferences)
   const setNetworkPreference = useAppStore((store) => store.setNetworkPreference)
+  const networkMode = useAppStore((store) => store.networkMode)
+  const setNetworkMode = useAppStore((store) => store.setNetworkMode)
   const usage = useNetworkUsage(true)
   const formatSpeedLimit = useFormatSpeedLimit()
-  const linkInput = useRef<HTMLInputElement>(null)
+  const linkInput = useRef<HTMLTextAreaElement>(null)
+
+  // One link with numbered ranges stands for many downloads (see batchUrl.ts). Null for an
+  // ordinary link, a magnet, or a range that would be more links than MAX_BATCH_LINKS.
+  const batch = useMemo(() => {
+    const trimmed = url.trim()
+    if (!trimmed || /^magnet:/i.test(trimmed)) return null
+    const expanded = expandBatchUrl(trimmed)
+    return expanded && expanded.length > 1 ? expanded : null
+  }, [url])
+  // A paste of several links, one per line or space-separated. Null for a single link.
+  const pasted = useMemo(() => {
+    const links = acceptedLinks(url)
+    return links.length > 1 ? links : null
+  }, [url])
+  // Several links at once, however they were given: a numbered pattern, or a pasted list.
+  const bulk = pasted ?? batch
+  // How many of a batch have been probed and started, while it runs.
+  const [batchProgress, setBatchProgress] = useState<{ done: number; total: number } | null>(null)
+  // "Download all links": the links read from the page, none ticked off yet.
+  const [grab, setGrab] = useState<GrabState>({ status: 'idle' })
+  const [skippedLinks, setSkippedLinks] = useState<string[]>([])
 
   const [probe, setProbe] = useState<ProbeState>({ status: 'idle' })
   // Tracks deselections rather than selections, so a newly-detected interface starts selected.
@@ -108,9 +153,12 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
     void window.plexo
       .readClipboardText()
       .then((text) => {
-        const link = acceptedLink(text)
+        const links = acceptedLinks(text)
         const { draftUrl, startedUrl } = useAppStore.getState()
-        if (link && link !== startedUrl && !draftUrl) setUrl(link)
+        if (links.length === 0 || draftUrl) return
+        // A clipboard holding a list opens with all of it; one link as before.
+        const value = links.length > 1 ? text.trim() : links[0]
+        if (value !== startedUrl) setUrl(value)
       })
       .catch(() => {})
   }, [setUrl])
@@ -143,7 +191,8 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
     setProbe({ status: 'probing' })
     const timer = setTimeout(async () => {
       try {
-        const result = await window.plexo.probeUrl(trimmed)
+        // A list is checked by its first link; the rest are probed as each is started.
+        const result = await window.plexo.probeUrl(bulk ? bulk[0] : trimmed)
         if (stale) return
         setProbe({ status: 'ready', result })
       } catch (error) {
@@ -156,10 +205,14 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
       stale = true
       clearTimeout(timer)
     }
-  }, [url, dropLink])
+  }, [url, bulk, dropLink])
 
   const ready = probe.status === 'ready' ? probe.result : null
   const torrent = ready?.kind === 'torrent' ? ready.torrent : null
+  // A page read for "Download all links": while one is shown, the form starts its links rather
+  // than the link field's own URL.
+  const page = grab.status === 'ready' ? grab.page : null
+  const grabbedSelected = page ? page.links.filter((link) => !skippedLinks.includes(link.url)) : []
   const chosenFiles = torrent
     ? torrent.files.flatMap((_, index) => (skippedFiles.includes(index) ? [] : [index]))
     : []
@@ -169,6 +222,8 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
     : (ready?.totalBytes ?? null)
   const multiChunkAllowed = ready !== null && ready.supportsRanges && ready.totalBytes !== null
   const isSingleStreamOnly = ready !== null && !multiChunkAllowed
+  // A grabbed page's files aren't known yet, so one-network-only never applies while grabbing.
+  const singleStream = !page && isSingleStreamOnly
 
   const detectedIds = interfaces.map((iface) => iface.id)
   // A network that has used up its data limit can't carry anything, so it can't be picked.
@@ -181,7 +236,7 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
   // The last pick may be all used up. Then nothing is picked, rather than what was left out: a
   // network left out is often left out on purpose (a phone's metered data), so it's chosen here
   // by hand, never stood in for the one that ran out.
-  const selectedInterfaceIds = isSingleStreamOnly ? pickedIds.slice(0, 1) : pickedIds
+  const selectedInterfaceIds = singleStream ? pickedIds.slice(0, 1) : pickedIds
   // The networks of the last pick that have used up their data, to say why nothing is picked.
   const usedUpPick =
     pickedIds.length === 0 && availableIds.length > 0
@@ -190,21 +245,33 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
         )
       : []
 
-  const canStart =
-    probe.status === 'ready' &&
-    (!torrent || chosenFiles.length > 0) &&
-    selectedInterfaceIds.length > 0 &&
-    Boolean(destinationDir) &&
-    !starting
+  const canStart = page
+    ? grabbedSelected.length > 0 &&
+      selectedInterfaceIds.length > 0 &&
+      Boolean(destinationDir) &&
+      !starting
+    : bulk
+      ? bulk.length > 0 && selectedInterfaceIds.length > 0 && Boolean(destinationDir) && !starting
+      : probe.status === 'ready' &&
+        (!torrent || chosenFiles.length > 0) &&
+        selectedInterfaceIds.length > 0 &&
+        Boolean(destinationDir) &&
+        !starting
   const startLabel = starting
-    ? 'Starting'
-    : probe.status === 'probing'
-      ? 'Checking'
-      : scheduledWait
-        ? 'Add to scheduled queue'
-        : full
-          ? 'Add to queue'
-          : 'Download'
+    ? batchProgress
+      ? `Adding ${Math.min(batchProgress.done + 1, batchProgress.total)}/${batchProgress.total}`
+      : 'Starting'
+    : page
+      ? `Download ${grabbedSelected.length}`
+      : probe.status === 'probing'
+        ? 'Checking'
+        : scheduledWait
+          ? 'Add to scheduled queue'
+          : full
+            ? 'Add to queue'
+            : bulk
+              ? `Download ${bulk.length}`
+              : 'Download'
 
   // Two networks on one subnet: the OS sends both down one route, so there's nothing to combine.
   let subnetConflict: { subnet: string; names: string[] } | null = null
@@ -229,7 +296,7 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
 
   const handleToggleInterface = (id: string): void => {
     if (isReached(id)) return
-    if (isSingleStreamOnly) {
+    if (singleStream) {
       // Single-stream mode can only download through 1 interface at a time
       setDeselectedInterfaceIds(detectedIds.filter((otherId) => otherId !== id))
       return
@@ -269,8 +336,84 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
     }
   }
 
+  // Checks and starts a list of links one at a time, returning how many started. Their screens
+  // don't open: a batch, or a grabbed page, is about the queue.
+  const startLinks = async (targets: string[]): Promise<number> => {
+    let added = 0
+    for (const [index, target] of targets.entries()) {
+      setBatchProgress({ done: index, total: targets.length })
+      try {
+        const result = await window.plexo.probeUrl(target)
+        if (result.kind !== 'http') continue
+        await window.plexo.startDownload({
+          url: result.finalUrl,
+          destinationDir,
+          suggestedFileName: result.suggestedFileName,
+          totalBytes: result.totalBytes ?? 0,
+          supportsRanges: result.supportsRanges && result.totalBytes !== null,
+          interfaceIds: selectedInterfaceIds,
+          etag: result.etag,
+          lastModified: result.lastModified,
+          kind: 'http',
+          streamsPerNetwork: streamsChoice === 'auto' ? undefined : streamsChoice
+        })
+        added += 1
+      } catch {
+        // A link that won't start is skipped; the rest still go.
+      }
+    }
+    return added
+  }
+
+  // Remembered for the next download, exactly as a single one is.
+  const rememberNetworks = (): void => {
+    for (const id of availableIds) {
+      const off = !selectedInterfaceIds.includes(id)
+      if (off !== Boolean(networkPreferences[id]?.off)) {
+        setNetworkPreference(id, { off: off || undefined })
+      }
+    }
+  }
+
+  const finishMany = async (targets: string[]): Promise<void> => {
+    setStarting(true)
+    setStartError(null)
+    try {
+      const added = await startLinks(targets)
+      if (added === 0) {
+        setStartError(`None of the ${targets.length} links could be started.`)
+        return
+      }
+      rememberNetworks()
+      useAppStore.setState({ startedUrl: url.trim() })
+      onDone()
+    } finally {
+      setBatchProgress(null)
+      setStarting(false)
+    }
+  }
+
+  /** "Download all links": read the page, list what it points at, and start the chosen ones. */
+  const handleGrab = async (): Promise<void> => {
+    const target = url.trim()
+    if (!target) return
+    setGrab({ status: 'scanning' })
+    setSkippedLinks([])
+    try {
+      setGrab({ status: 'ready', page: await window.plexo.extractLinks(target) })
+    } catch (error) {
+      setGrab({ status: 'error', message: describeError(error) })
+    }
+  }
+
+  const handleStartGrabbed = (): Promise<void> =>
+    finishMany(grabbedSelected.map((link) => link.url))
+
   const handleStart = async (): Promise<void> => {
-    if (probe.status !== 'ready' || !canStart) return
+    if (!canStart) return
+    if (page) return handleStartGrabbed()
+    if (bulk) return finishMany(bulk)
+    if (probe.status !== 'ready') return
     // Captured now: links can arrive and change what's shown while this starts.
     const linkId = shownLink?.id
     const form = useAppStore.getState().formKey
@@ -373,23 +516,37 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
       </div>
 
       <div className="flex min-h-0 flex-col gap-3.5 overflow-y-auto px-5 py-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-start gap-2">
           <div
             className={cn(
-              'flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[9px] border bg-[var(--input-bg)] px-3',
+              'flex min-h-9 min-w-0 flex-1 items-center gap-2 rounded-[9px] border bg-[var(--input-bg)] px-3',
               probe.status === 'error' ? 'border-destructive' : 'border-input'
             )}
           >
-            <input
+            <textarea
               ref={linkInput}
               autoFocus
-              type="text"
+              rows={1}
               value={url}
-              onChange={(event) => setUrl(event.target.value)}
-              placeholder="Paste a link: https:// or magnet:"
+              onChange={(event) => {
+                setUrl(event.target.value)
+                // Editing the link leaves any page that was read for it behind.
+                if (grab.status !== 'idle') {
+                  setGrab({ status: 'idle' })
+                  setSkippedLinks([])
+                }
+              }}
+              // Enter starts it; Shift+Enter breaks the line, for a list of links.
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault()
+                  void handleStart()
+                }
+              }}
+              placeholder="Paste a link, a magnet, or a list of links"
               spellCheck={false}
               aria-label="Link"
-              className="min-w-0 flex-1 border-none bg-transparent font-mono text-[13px] text-foreground outline-none"
+              className="max-h-36 min-w-0 flex-1 resize-none self-center overflow-y-auto border-none bg-transparent py-2 font-mono text-[13px] text-foreground outline-none [field-sizing:content]"
             />
             {url && (
               <Tooltip>
@@ -416,7 +573,118 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
             <FolderOpen data-icon="inline-start" />
             Open .torrent
           </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  aria-label="Get all links on this page"
+                  className="h-9"
+                  disabled={!url.trim() || grab.status === 'scanning'}
+                  onClick={() => void handleGrab()}
+                >
+                  <ListPlus />
+                </Button>
+              }
+            />
+            <TooltipContent>Get all links on this page</TooltipContent>
+          </Tooltip>
         </div>
+
+        {bulk && !page && (
+          <div className="flex items-center gap-2 rounded-lg border-[0.5px] border-border bg-card px-3 py-2 text-[12.5px]">
+            <Layers aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 flex-1 truncate">
+              {pasted
+                ? `${bulk.length} links pasted, e.g. `
+                : `${bulk.length} downloads from one pattern, e.g. `}
+              <span className="font-mono">{bulk[0]}</span>
+            </span>
+          </div>
+        )}
+
+        {grab.status === 'scanning' && (
+          <div className="font-mono text-[11.5px] text-muted-foreground">Reading the page…</div>
+        )}
+        {grab.status === 'error' && (
+          <div className="flex items-center gap-2 text-[12.5px] text-[var(--color-danger)]">
+            <AlertTriangle className="size-4 shrink-0" />
+            {grab.message}
+          </div>
+        )}
+        {page && (
+          <div className="flex min-h-0 flex-col gap-2 rounded-lg border-[0.5px] border-border bg-card p-3">
+            <div className="flex items-center gap-2 text-[12.5px]">
+              <span className="min-w-0 flex-1 truncate font-medium">
+                {page.title || fileNameFromPath(page.finalUrl) || page.finalUrl}
+              </span>
+              <span className="shrink-0 font-mono text-[11.5px] text-muted-foreground tabular-nums">
+                {grabbedSelected.length} of {page.links.length}
+              </span>
+            </div>
+            {page.links.length === 0 ? (
+              <div className="text-[12.5px] text-muted-foreground">
+                No links found on that page.
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSkippedLinks([])}
+                  >
+                    Select all
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSkippedLinks(page.links.map((link) => link.url))}
+                  >
+                    Select none
+                  </Button>
+                </div>
+                <div className="flex max-h-56 flex-col overflow-y-auto">
+                  {page.links.map((link) => {
+                    const name = fileNameFromPath(link.url) || link.url
+                    return (
+                      <div
+                        key={link.url}
+                        className="flex items-center gap-2.5 rounded-md px-1.5 py-1.5 hover:bg-secondary"
+                      >
+                        <Checkbox
+                          aria-label={`Download ${name}`}
+                          checked={!skippedLinks.includes(link.url)}
+                          onCheckedChange={(on) =>
+                            setSkippedLinks((previous) => {
+                              if (on) return previous.filter((entry) => entry !== link.url)
+                              return previous.includes(link.url)
+                                ? previous
+                                : [...previous, link.url]
+                            })
+                          }
+                        />
+                        <span
+                          className="min-w-0 flex-1 truncate font-mono text-[11.5px]"
+                          title={link.url}
+                        >
+                          {name}
+                        </span>
+                        <span className="shrink-0 rounded border-[0.5px] border-border px-1 font-mono text-[10px] text-muted-foreground uppercase">
+                          {categoryOfName(name)}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {shownLink?.from && (
           <div className="flex h-6 items-center gap-1.5 self-start rounded-full border-[0.5px] border-[var(--color-wifi-border)] bg-[var(--color-wifi-bg)] px-2.5 text-[12px] font-medium text-[var(--color-wifi-text)]">
@@ -452,17 +720,17 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
           </div>
         )}
 
-        {probe.status === 'probing' && (
+        {probe.status === 'probing' && !bulk && (
           <div className="font-mono text-[11.5px] text-muted-foreground">Checking the link…</div>
         )}
-        {probe.status === 'error' && (
+        {probe.status === 'error' && !page && !bulk && (
           <div className="flex items-center gap-2 text-[12.5px] text-[var(--color-danger)]">
             <AlertTriangle className="size-4 shrink-0" />
             {probe.message}
           </div>
         )}
 
-        {ready && (
+        {ready && !page && !bulk && (
           <div className="flex items-center gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border-[0.5px] border-border bg-card font-mono text-[10px] font-semibold text-muted-foreground">
               {torrent && torrent.files.length > 1 ? 'DIR' : fileExtensionBadge(fileName)}
@@ -498,7 +766,7 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
           </div>
         )}
 
-        {torrent && (
+        {torrent && !page && (
           <TorrentFileList
             files={torrent.files}
             skipped={skippedFiles}
@@ -569,10 +837,20 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
               )
             })}
           </div>
+          {availableIds.length > 1 && (
+            <label className="flex shrink-0 items-center gap-1.5 pt-1.5 text-[11.5px] text-[var(--text-secondary)]">
+              <Switch
+                aria-label="Alternate networks"
+                checked={networkMode === 'alternate'}
+                onCheckedChange={(on) => setNetworkMode(on ? 'alternate' : 'combine')}
+              />
+              Alternate
+            </label>
+          )}
         </div>
 
         {/* A torrent's speed comes from its peers, and an unsplittable file has one stream. */}
-        {ready && !torrent && !isSingleStreamOnly && (
+        {(page || ready) && !torrent && !singleStream && (
           <div className="flex items-center gap-3">
             <div className={labelClass} id="new-download-streams">
               Streams
@@ -623,7 +901,7 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
             Every network has reached its data limit. Raise one in Speed &amp; data limits.
           </div>
         )}
-        {isSingleStreamOnly && selectedInterfaceIds.length === 1 && interfaces.length > 1 && (
+        {singleStream && selectedInterfaceIds.length === 1 && interfaces.length > 1 && (
           <div className="text-[12px] text-muted-foreground">
             This download uses one connection on one network.
           </div>

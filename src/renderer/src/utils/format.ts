@@ -188,6 +188,22 @@ export function acceptedLink(text: string): string | null {
   return null
 }
 
+/** Every link a piece of text holds, in order and de-duplicated: what pasting one link, or a
+ * whole list of them, gives. Whitespace separates them, so an arbitrary paste keeps only the
+ * links in it. */
+export function acceptedLinks(text: string): string[] {
+  const links: string[] = []
+  const seen = new Set<string>()
+  for (const token of text.split(/\s+/)) {
+    const link = acceptedLink(token)
+    if (link && !seen.has(link)) {
+      seen.add(link)
+      links.push(link)
+    }
+  }
+  return links
+}
+
 /** Where a link's download comes from, in a word: its host. */
 export function sourceOf(url: string): string {
   try {

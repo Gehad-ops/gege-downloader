@@ -1,4 +1,6 @@
 import {
+  ArrowDown,
+  ArrowUp,
   Copy,
   Download,
   ExternalLink,
@@ -38,6 +40,20 @@ interface ActionMeta {
 }
 
 export const ACTION_META: Record<ActionId, ActionMeta> = {
+  moveUp: {
+    label: 'Move up',
+    toolbar: 'Move up',
+    single: true,
+    failure: SOMETHING_WRONG,
+    icon: ArrowUp
+  },
+  moveDown: {
+    label: 'Move down',
+    toolbar: 'Move down',
+    single: true,
+    failure: SOMETHING_WRONG,
+    icon: ArrowDown
+  },
   pause: {
     label: 'Pause',
     many: (n) => `Pause ${n} downloads`,

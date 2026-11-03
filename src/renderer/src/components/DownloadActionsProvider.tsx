@@ -37,6 +37,16 @@ export function DownloadActionsProvider({
         return false
       }
       switch (id) {
+        case 'moveUp':
+        case 'moveDown': {
+          const results = await Promise.allSettled(
+            targets.map((item) =>
+              window.plexo.moveDownload(item.id, id === 'moveUp' ? 'up' : 'down')
+            )
+          )
+          const failed = results.find((result) => result.status === 'rejected')
+          return failed ? fail(failed.reason) : true
+        }
         case 'pause':
         case 'resume':
         case 'retry': {
