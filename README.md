@@ -1,16 +1,16 @@
 <p align="center">
-  <img src="build/icon.png" width="128" alt="Plexo icon">
+  <img src="build/icon.png" width="128" alt="Gege Downloader icon">
 </p>
 
-<h1 align="center">Plexo</h1>
+<h1 align="center">Gege Downloader</h1>
 
 <p align="center">
   Download files and torrents faster by combining all your internet connections.<br>
-  Plexo combines Wi-Fi, Ethernet, mobile networks, and other available connections to boost your download speeds.
+  Gege Downloader combines Wi-Fi, Ethernet, mobile networks, and other available connections to boost your download speeds.
 </p>
 
 <p align="center">
-  <a href="https://getplexo.app">Download</a> ·
+  <a href="https://getgege.app">Download</a> ·
   <a href="#features">Features</a> ·
   <a href="#troubleshooting">Troubleshooting</a> ·
   <a href="#how-it-works">How it works</a> ·
@@ -18,26 +18,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/anmolkapil/plexo/releases/latest"><img src="https://img.shields.io/github/v/release/anmolkapil/plexo?label=release" alt="Latest release"></a>
-  <a href="https://github.com/anmolkapil/plexo/releases"><img src="https://img.shields.io/github/downloads/anmolkapil/plexo/total" alt="Downloads"></a>
-  <a href="https://github.com/anmolkapil/plexo/actions/workflows/ci.yml"><img src="https://github.com/anmolkapil/plexo/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI status"></a>
-  <a href="https://getplexo.app/#downloads"><img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-black" alt="macOS, Windows and Linux"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/anmolkapil/plexo" alt="MIT license"></a>
+  <a href="https://github.com/Gehad-ops/gege-downloader/releases/latest"><img src="https://img.shields.io/github/v/release/Gehad-ops/gege-downloader?label=release" alt="Latest release"></a>
+  <a href="https://github.com/Gehad-ops/gege-downloader/releases"><img src="https://img.shields.io/github/downloads/Gehad-ops/gege-downloader/total" alt="Downloads"></a>
+  <a href="https://github.com/Gehad-ops/gege-downloader/actions/workflows/ci.yml"><img src="https://github.com/Gehad-ops/gege-downloader/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI status"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Gehad-ops/gege-downloader" alt="MIT license"></a>
 </p>
 
-<p align="center">
-  <a href="https://ko-fi.com/I5Q128RXSP"><img src="https://storage.ko-fi.com/cdn/kofi6.png" height="48" alt="Buy me a coffee on Ko-fi"></a>
-</p>
 
-<p align="center">
-  For anything private, email <a href="mailto:hello@getplexo.app"><strong>hello@getplexo.app</strong></a>
-</p>
-
-<p align="center">
-  <a href="https://trendshift.io/repositories/240800?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-240800" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/240800/daily?language=TypeScript" alt="anmolkapil%2Fplexo | Trendshift" width="250" height="55"/></a>
-  <a href="https://trendshift.io/repositories/240800?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-240800" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/240800/daily" alt="anmolkapil%2Fplexo | Trendshift" width="250" height="55"/></a>
-  <a href="https://trendshift.io/repositories/240800?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-240800" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/240800/weekly?language=TypeScript" alt="anmolkapil%2Fplexo | Trendshift" width="250" height="55"/></a>
-</p>
 
 https://github.com/user-attachments/assets/e57728f4-fb63-441f-839c-174eef954b17
 
@@ -56,7 +43,7 @@ https://github.com/user-attachments/assets/e57728f4-fb63-441f-839c-174eef954b17
 
 ### Browser integration
 
-- Capture downloads or send individual links to Plexo
+- Capture downloads or send individual links to Gege Downloader
 - Download files using your browser’s authenticated session
 - Exclude websites and skip small files
 
@@ -79,7 +66,7 @@ https://github.com/user-attachments/assets/e57728f4-fb63-441f-839c-174eef954b17
 
 ## Troubleshooting
 
-If your problem isn't covered here, [open an issue](https://github.com/anmolkapil/plexo/issues).
+If your problem isn't covered here, [open an issue](https://github.com/Gehad-ops/gege/issues).
 
 <details>
 <summary><strong>Windows says "Windows protected your PC"</strong></summary>
@@ -93,17 +80,17 @@ The installer isn't code-signed yet. Click **More info**, then **Run anyway**.
 <summary><strong>A second network doesn't make downloads faster</strong></summary>
 <br>
 
-Plexo adds speed only when each network reaches the internet through its own connection. Wi-Fi from your home router plus a phone tethered over USB works. Wi-Fi and Ethernet plugged into the same router doesn't: both share one connection, so the total stays the same.
+Gege Downloader adds speed only when each network reaches the internet through its own connection. Wi-Fi from your home router plus a phone tethered over USB works. Wi-Fi and Ethernet plugged into the same router doesn't: both share one connection, so the total stays the same.
 
-VPN, virtual, and isolated adapters show up in Plexo too, so check each network's latency and speed there.
+VPN, virtual, and isolated adapters show up in Gege Downloader too, so check each network's latency and speed there.
 
 </details>
 
 <details>
-<summary><strong>A network doesn't appear in Plexo</strong></summary>
+<summary><strong>A network doesn't appear in Gege Downloader</strong></summary>
 <br>
 
-Plexo can use any connection your operating system shows as a network adapter.
+Gege Downloader can use any connection your operating system shows as a network adapter.
 
 - **iPhone on macOS**: in **System Settings › Network**, open **iPhone USB** and turn off **Disable unless needed**
 - **Android on macOS**: install TetherKit, as described below
@@ -117,7 +104,7 @@ Plexo can use any connection your operating system shows as a network adapter.
 
 If Windows turns Wi-Fi off when Ethernet is plugged in, open the Group Policy Editor (`gpedit.msc`), go to _Computer Configuration_ › _Administrative Templates_ › _Network_ › _Windows Connection Manager_, and set **Minimize the number of simultaneous connections to the Internet or a Windows domain** to **Disabled**.
 
-If both stay connected but one sits idle in Plexo, Windows may be sending its traffic out the other network. Add your setup to [#65](https://github.com/anmolkapil/plexo/issues/65).
+If both stay connected but one sits idle in Gege Downloader, Windows may be sending its traffic out the other network. Add your setup to [#65](https://github.com/Gehad-ops/gege/issues/65).
 
 </details>
 
@@ -146,27 +133,27 @@ macOS has no driver for RNDIS, the protocol Android's USB tethering uses, so the
 3. On the phone, open **Settings › Network & internet › Hotspot & tethering** and turn on **USB tethering**.
 4. Open TetherKit. On first run, approve its helper with your password.
 5. Pick your phone, click **Connect**, then apply the IP settings.
-6. Open Plexo. The phone appears in the networks list.
+6. Open Gege Downloader. The phone appears in the networks list.
 
 Thanks to [@XiaoMiku01](https://github.com/XiaoMiku01) for building and open-sourcing TetherKit.
 
 ## How it works
 
-Plexo downloads different parts of the same file through each internet connection you select, then assembles them on disk.
+Gege Downloader downloads different parts of the same file through each internet connection you select, then assembles them on disk.
 
-For direct downloads, Plexo uses HTTP range requests to fetch chunks in parallel. Streams take new chunks from a shared queue as they finish, so faster connections handle more of the file. Plexo adjusts stream counts to network, server and disk performance. Near the end, idle streams can race slow chunks; the first to finish wins. Servers without range support use a single stream.
+For direct downloads, Gege Downloader uses HTTP range requests to fetch chunks in parallel. Streams take new chunks from a shared queue as they finish, so faster connections handle more of the file. Gege Downloader adjusts stream counts to network, server and disk performance. Near the end, idle streams can race slow chunks; the first to finish wins. Servers without range support use a single stream.
 
-For torrents, Plexo distributes peer connections across your selected networks. New peers connect through the network with the fewest peers.
+For torrents, Gege Downloader distributes peer connections across your selected networks. New peers connect through the network with the fewest peers.
 
-Each network needs its own internet connection to add bandwidth. Plexo combines connections for its own downloads and requires no VPN or virtual network adapter.
+Each network needs its own internet connection to add bandwidth. Gege Downloader combines connections for its own downloads and requires no VPN or virtual network adapter.
 
 ## Build from source
 
 You need Node.js 22.13 or later and npm 9 or later.
 
 ```bash
-git clone https://github.com/anmolkapil/plexo.git
-cd plexo
+git clone https://github.com/Gehad-ops/gege.git
+cd gege
 npm ci
 npm run dev
 ```
@@ -185,13 +172,9 @@ Run platform packaging commands on the corresponding operating system. Local bui
 
 ## Contributing
 
-Start with [open issues](https://github.com/anmolkapil/plexo/issues), or contribute a reproducible bug report, a fix, network compatibility testing or documentation improvements.
+Start with [open issues](https://github.com/Gehad-ops/gege/issues), or contribute a reproducible bug report, a fix, network compatibility testing or documentation improvements.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, required checks and pull request guidance. For a substantial feature, [open an issue](https://github.com/anmolkapil/plexo/issues/new) to discuss the approach before implementing it.
-
-## Acknowledgements
-
-Special thanks to [Dhananjay Bhosale](https://github.com/DhananjayBhosale) for code signing and notarizing the macOS app.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, required checks and pull request guidance. For a substantial feature, [open an issue](https://github.com/Gehad-ops/gege/issues/new) to discuss the approach before implementing it.
 
 ## License
 

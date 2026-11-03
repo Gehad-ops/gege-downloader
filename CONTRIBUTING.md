@@ -1,12 +1,12 @@
-# Contributing to Plexo
+# Contributing to Gege Downloader
 
-Thanks for taking a look at Plexo. It's a small project, so the process is intentionally lightweight.
+Thanks for taking a look at Gege Downloader. It's a small project, so the process is intentionally lightweight.
 
 ## Setup
 
 ```bash
-git clone https://github.com/anmolkapil/plexo.git
-cd plexo
+git clone https://github.com/Gehad-ops/gege.git
+cd gege
 npm ci
 npm run dev
 ```
@@ -17,8 +17,8 @@ Requires Node.js 22.13+ and npm 9+, on Windows, macOS, or Linux.
 
 Run packaging commands on the corresponding operating system. Packages are written to `dist/`.
 
-- **macOS**: `npm run build:mac` creates Intel and Apple silicon `.dmg` and `.zip` packages. Unpacked apps are in `dist/mac/Plexo.app` and `dist/mac-arm64/Plexo.app`.
-- **Windows**: `npm run build:win` creates one installer for x64 and ARM64. `npm run build:unpack` creates an unpacked app for the current architecture; run `dist/win-unpacked/plexo.exe`.
+- **macOS**: `npm run build:mac` creates Intel and Apple silicon `.dmg` and `.zip` packages. Unpacked apps are in `dist/mac/Gege Downloader.app` and `dist/mac-arm64/Gege Downloader.app`.
+- **Windows**: `npm run build:win` creates one installer for x64 and ARM64. `npm run build:unpack` creates an unpacked app for the current architecture; run `dist/win-unpacked/gege.exe`.
 - **Linux**: `npm run build:linux` creates AppImage, `.deb` and `.rpm` packages for x86_64 and ARM64. RPM packaging requires `rpmbuild`; the release workflow installs it through the `rpm` package.
 
 Local builds are unsigned unless signing credentials are configured.
@@ -35,7 +35,7 @@ For Chrome, enable **Developer mode** at `chrome://extensions`, choose **Load un
 
 For Firefox, open `about:debugging#/runtime/this-firefox`, choose **Load Temporary Add-on**, and select `extension/dist/firefox/manifest.json`. Temporary add-ons are removed when Firefox restarts.
 
-Keep Plexo running to test download capture. Rebuild and reload the extension after changing its source.
+Keep Gege Downloader running to test download capture. Rebuild and reload the extension after changing its source.
 
 ## Before opening a PR
 
@@ -60,16 +60,16 @@ On Linux, Electron needs a display even when the test window is hidden. In a hea
 xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24 -noreset" npm run test:e2e:smoke
 ```
 
-`e2e/` drives the real built app through the same `window.plexo` API the renderer uses, against a local test server that can drop, stall, corrupt or hold any response at an exact byte. Every test also runs automatic checks: a `completed` download must match the source byte for byte, and anything else must leave no file, part files or open handles behind. The app's window stays hidden while tests run.
+`e2e/` drives the real built app through the same `window.gege` API the renderer uses, against a local test server that can drop, stall, corrupt or hold any response at an exact byte. Every test also runs automatic checks: a `completed` download must match the source byte for byte, and anything else must leave no file, part files or open handles behind. The app's window stays hidden while tests run.
 
 ```bash
 npm run test:e2e:smoke          # smoke tests run on every PR
 npm run test:e2e                # everything, including @disk and @chaos
-PLEXO_CHAOS_RUNS=50 npx playwright test e2e/chaos.spec.ts   # more random sequences
-PLEXO_CHAOS_SEED=<seed> npx playwright test e2e/chaos.spec.ts  # replay a chaos failure
+GEGE_CHAOS_RUNS=50 npx playwright test e2e/chaos.spec.ts   # more random sequences
+GEGE_CHAOS_SEED=<seed> npx playwright test e2e/chaos.spec.ts  # replay a chaos failure
 ```
 
-Tests build the app first; set `PLEXO_E2E_SKIP_BUILD=1` when `out/` is already fresh. Known bugs are written as `test.fail(...)` — when a fix lands, Playwright reports the test as unexpectedly passing, and the marker comes off. Retries are deliberately off: a download test that passes only on a retry has found a race.
+Tests build the app first; set `GEGE_E2E_SKIP_BUILD=1` when `out/` is already fresh. Known bugs are written as `test.fail(...)` — when a fix lands, Playwright reports the test as unexpectedly passing, and the marker comes off. Retries are deliberately off: a download test that passes only on a retry has found a race.
 
 ## Making changes
 
@@ -80,7 +80,7 @@ Tests build the app first; set `PLEXO_E2E_SKIP_BUILD=1` when `out/` is already f
 
 ## Releasing
 
-A release ships Plexo for macOS (Apple silicon and Intel `.dmg`), Windows (one installer for x64 and ARM64) and Linux (AppImage, `.deb` and `.rpm`, x86_64 and ARM64). The download page (`docs/`, served by GitHub Pages) reads them from the latest GitHub Release and labels each one from its file name (`docs/downloads.js`), so keep the naming in `electron-builder.yml` intact.
+A release ships Gege Downloader for macOS (Apple silicon and Intel `.dmg`), Windows (one installer for x64 and ARM64) and Linux (AppImage, `.deb` and `.rpm`, x86_64 and ARM64). The download page (`docs/`, served by GitHub Pages) reads them from the latest GitHub Release and labels each one from its file name (`docs/downloads.js`), so keep the naming in `electron-builder.yml` intact.
 
 First bump the version and add its entry at the top of `docs/changelog.js`, in one PR. The entry becomes the release notes, and a tag without one stops before building.
 
@@ -91,7 +91,7 @@ git checkout main && git pull
 git tag v<version> && git push origin v<version>
 ```
 
-The tag runs `.github/workflows/release.yml`: it builds every OS and leaves a draft GitHub Release with the changelog entry and the downloads table. Check the draft and publish it. Publishing is what ships it: it becomes the Latest release, and within a few hours every running Plexo downloads it in the background and offers a restart. Leave rc releases unmarked as pre-release: the app only updates to Latest, which a pre-release never is. Mark one pre-release (a beta after 1.0, say) to keep it from everyone's automatic updates. A build to throw away? Delete the draft and the tag.
+The tag runs `.github/workflows/release.yml`: it builds every OS and leaves a draft GitHub Release with the changelog entry and the downloads table. Check the draft and publish it. Publishing is what ships it: it becomes the Latest release, and within a few hours every running Gege Downloader downloads it in the background and offers a restart. Leave rc releases unmarked as pre-release: the app only updates to Latest, which a pre-release never is. Mark one pre-release (a beta after 1.0, say) to keep it from everyone's automatic updates. A build to throw away? Delete the draft and the tag.
 
 Besides the downloads, a release carries what the app's updater reads (`src/main/updater.ts`): the `latest*.yml` channel files, the macOS `.zip`s and the blockmaps. `scripts/release-notes.mjs --files` lists them; the download page ignores them.
 
