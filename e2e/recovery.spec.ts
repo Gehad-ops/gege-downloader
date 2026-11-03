@@ -59,7 +59,7 @@ test.describe('crash (SIGKILL) and recover @smoke', () => {
 
 test.describe('persisted state on disk @smoke', () => {
   async function pausedDownload(
-    plexo: import('./fixtures').PlexoApp,
+    plexo: import('./fixtures').GegeApp,
     serve: (o: { size: number; seed?: number }) => Promise<import('./origin').Origin>,
     seed = 1
   ): Promise<{ id: string; origin: import('./origin').Origin }> {
@@ -119,7 +119,7 @@ test.describe('persisted state on disk @smoke', () => {
     serve
   }) => {
     await pausedDownload(plexo, serve)
-    const partial = `${(await plexo.currentHttp())!.destinationPath}.plexo`
+    const partial = `${(await plexo.currentHttp())!.destinationPath}.gege`
     await plexo.quit()
     await rm(partial)
     await plexo.launch()
@@ -155,7 +155,7 @@ test.describe('persisted state on disk @smoke', () => {
 
     // A layout this version doesn't read, with its staging file beside the destination.
     const laterId = '00000000-0000-4000-8000-000000000005'
-    const staging = join(dirs.dest, 'other.iso.plexo')
+    const staging = join(dirs.dest, 'other.iso.gege')
     await manifest(laterId, {
       version: 5,
       partialPath: staging,
@@ -163,7 +163,7 @@ test.describe('persisted state on disk @smoke', () => {
     })
     await writeFile(staging, seededBytes(1000, 6))
 
-    // An old manifest naming a file that holds something: never Plexo's to delete.
+    // An old manifest naming a file that holds something: never Gege Downloader's to delete.
     const realId = '00000000-0000-4000-8000-000000000003'
     const realFile = join(dirs.dest, 'mine.txt')
     await manifest(realId, {
@@ -196,7 +196,7 @@ test.describe('persisted state on disk @smoke', () => {
     const state = (await plexo.currentHttp())!
     const done = state.blocks!.find((block) => block.status === 'completed')!
     await plexo.quit()
-    const staging = `${state.destinationPath}.plexo`
+    const staging = `${state.destinationPath}.gege`
     await truncate(staging, done.rangeStart + 1000)
 
     await plexo.launch()

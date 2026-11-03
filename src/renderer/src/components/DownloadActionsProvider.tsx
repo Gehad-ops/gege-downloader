@@ -41,7 +41,7 @@ export function DownloadActionsProvider({
         case 'moveDown': {
           const results = await Promise.allSettled(
             targets.map((item) =>
-              window.plexo.moveDownload(item.id, id === 'moveUp' ? 'up' : 'down')
+              window.gege.moveDownload(item.id, id === 'moveUp' ? 'up' : 'down')
             )
           )
           const failed = results.find((result) => result.status === 'rejected')
@@ -53,8 +53,8 @@ export function DownloadActionsProvider({
           const results = await Promise.allSettled(
             targets.map((item) =>
               id === 'pause'
-                ? window.plexo.pauseDownload(item.id)
-                : window.plexo.resumeDownload(item.id)
+                ? window.gege.pauseDownload(item.id)
+                : window.gege.resumeDownload(item.id)
             )
           )
           const failed = results.find((result) => result.status === 'rejected')
@@ -68,7 +68,7 @@ export function DownloadActionsProvider({
           // Only once it's really gone, so the new one can't collide with what's left of it.
           const [item] = targets
           try {
-            await window.plexo.removeDownload(item.id)
+            await window.gege.removeDownload(item.id)
           } catch (cause) {
             return fail(cause)
           }
@@ -83,8 +83,8 @@ export function DownloadActionsProvider({
             const [item] = targets
             const found =
               id === 'open'
-                ? await window.plexo.openDownload(item.id)
-                : await window.plexo.revealDownload(item.id)
+                ? await window.gege.openDownload(item.id)
+                : await window.gege.revealDownload(item.id)
             return found || fail('That file is no longer where it was saved.')
           } catch (cause) {
             return fail(cause)
@@ -126,11 +126,11 @@ export function DownloadActionsProvider({
       const gone = new Set<string>()
       let firstFailure: unknown
       if (clearAll) {
-        await window.plexo.clearHistory()
+        await window.gege.clearHistory()
       } else {
         for (const item of items) {
           try {
-            await window.plexo.removeDownload(item.id, { trashFile: mode === 'trash' })
+            await window.gege.removeDownload(item.id, { trashFile: mode === 'trash' })
             useAppStore.getState().forgetDownload(item.id)
             gone.add(item.id)
           } catch (cause) {

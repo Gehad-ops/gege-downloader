@@ -104,7 +104,7 @@ function DiskSpaceCard({
   useEffect(() => {
     let disposed = false
     const load = (): void => {
-      void window.plexo
+      void window.gege
         .diskSpace(destinationDir)
         .then((next) => !disposed && setSpace(next))
         .catch(() => {})

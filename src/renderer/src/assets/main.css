@@ -153,9 +153,9 @@
   --radius: 10px;
 }
 
-/* Maps shadcn/Base UI's expected semantic tokens onto Plexo's existing palette above, instead of
+/* Maps shadcn/Base UI's expected semantic tokens onto Gege Downloader's existing palette above, instead of
    introducing a second, parallel color system. Tailwind only generates `bg-primary`-style
-   utilities for names declared here, in `@theme` — so this can freely reuse Plexo's own custom
+   utilities for names declared here, in `@theme` — so this can freely reuse Gege Downloader's own custom
    property *values* (e.g. --color-accent) without colliding with their names, since only the
    left-hand names below become Tailwind tokens. */
 @theme inline {
@@ -367,12 +367,12 @@
   .progress-flow {
     background-image: linear-gradient(90deg, var(--chart-teal), var(--chart-blue));
     background-size: 200% 100%;
-    animation: plexo-flow 2s linear infinite;
+    animation: gege-flow 2s linear infinite;
   }
 
   .live-dot {
     background: var(--chart-teal);
-    animation: plexo-live 1.6s infinite;
+    animation: gege-live 1.6s infinite;
   }
 }
 
@@ -383,7 +383,7 @@
   }
 }
 
-@keyframes plexo-flow {
+@keyframes gege-flow {
   0% {
     background-position: 0 0;
   }
@@ -392,7 +392,7 @@
   }
 }
 
-@keyframes plexo-live {
+@keyframes gege-live {
   0% {
     box-shadow: 0 0 0 0 rgba(61, 220, 196, 0.55);
   }
@@ -401,13 +401,13 @@
   }
 }
 
-@keyframes plexo-dash {
+@keyframes gege-dash {
   to {
     stroke-dashoffset: -60;
   }
 }
 
-@keyframes plexo-glow {
+@keyframes gege-glow {
   0%,
   100% {
     opacity: 0.45;
@@ -417,7 +417,7 @@
   }
 }
 
-@keyframes plexo-popover-in {
+@keyframes gege-popover-in {
   from {
     opacity: 0;
     transform: translateY(-4px) scale(0.97);

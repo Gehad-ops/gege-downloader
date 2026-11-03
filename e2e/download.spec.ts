@@ -6,7 +6,7 @@ import { BLOCK, expect, LAN_ADDRESS, test } from './fixtures'
 test.describe('happy paths @smoke', () => {
   test('IPv6-only origin downloads through an IPv6 interface', async ({ plexo, serve }) => {
     const origin = await serve({ size: 4 * BLOCK, host: '::1' })
-    await plexo.relaunch({ PLEXO_E2E_INTERFACES: 'a=::1' })
+    await plexo.relaunch({ GEGE_E2E_INTERFACES: 'a=::1' })
     await plexo.start(origin.url(), origin.sha256)
     const state = await plexo.waitForHttpStatus('completed')
     expect(state.networks.every((network) => network.retries === 0)).toBe(true)

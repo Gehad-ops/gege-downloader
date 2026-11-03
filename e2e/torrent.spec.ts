@@ -207,7 +207,7 @@ test.describe('torrents over two networks', () => {
 test.describe('uploading', () => {
   test.skip(!LAN_ADDRESS, 'needs a second local address to stand in for the network')
   // A USB-tethered network, the one kind once left out: every network uploads, whatever its kind.
-  test.use({ appEnv: { PLEXO_E2E_INTERFACES: `b=${LAN_ADDRESS}==usb` } })
+  test.use({ appEnv: { GEGE_E2E_INTERFACES: `b=${LAN_ADDRESS}==usb` } })
 
   test('peers get pieces back over every network, USB-tethered ones too', async ({ plexo }) => {
     const data = seededBytes(4 * MB, 51)
@@ -216,23 +216,23 @@ test.describe('uploading', () => {
       uploadLimit: 400 * KB
     })
     const other = await swarm.leech(torrent)
-    let fromPlexo = 0
+    let fromGege = 0
     let connected = false
     other.on('wire', (wire: Wire, address: string) => {
-      // Plexo dials over network b, from the LAN address. A dual-stack listener reports it
+      // Gege Downloader dials over network b, from the LAN address. A dual-stack listener reports it
       // IPv4-mapped: ::ffff:<address>:<port>.
       if (!address.replace(/^::ffff:/, '').startsWith(`${LAN_ADDRESS}:`)) return
       connected = true
-      wire.on('download', (bytes: number) => (fromPlexo += bytes))
+      wire.on('download', (bytes: number) => (fromGege += bytes))
     })
 
     await plexo.start(await torrentFileOnDisk(torrent), sha256(data), { networks: ['b'] })
     const done = await plexo.waitForTorrentStatus('completed', 60_000)
-    expect(connected, 'Plexo connected to the other client').toBe(true)
-    expect(fromPlexo, 'what the other client received from Plexo').toBeGreaterThan(0)
-    // What Plexo shows it sent: at least what arrived (a little may still be in flight at the end).
+    expect(connected, 'Gege Downloader connected to the other client').toBe(true)
+    expect(fromGege, 'what the other client received from Gege Downloader').toBeGreaterThan(0)
+    // What Gege Downloader shows it sent: at least what arrived (a little may still be in flight at the end).
     const sentOverB = done.networks.find((network) => network.id === 'b')?.bytesUploaded ?? 0
-    expect(sentOverB).toBeGreaterThanOrEqual(fromPlexo)
+    expect(sentOverB).toBeGreaterThanOrEqual(fromGege)
     expect(done.bytesUploaded).toBe(sentOverB)
     // Nothing is moving once it's done.
     expect(done.uploadSpeedBytesPerSec ?? 0).toBe(0)

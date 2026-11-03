@@ -1,14 +1,14 @@
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { DEFAULT_DOWNLOAD_SCHEDULE } from '../src/shared/downloadSchedule'
-import { BLOCK, expect, test, type PlexoApp } from './fixtures'
+import { BLOCK, expect, test, type GegeApp } from './fixtures'
 import { named, Swarm, torrentFileOnDisk } from './torrentSwarm'
 import { seededBytes, sha256 } from './origin'
 
 const schedule = { ...DEFAULT_DOWNLOAD_SCHEDULE, enabled: true }
 const at = (day: number, hour: number): number => new Date(2000, 0, day, hour).getTime()
 
-async function clock(plexo: PlexoApp, now: number, wake = true): Promise<void> {
+async function clock(plexo: GegeApp, now: number, wake = true): Promise<void> {
   await plexo.evaluateMain(
     ({ powerMonitor }, value) => {
       Date.now = () => value.now
@@ -121,13 +121,13 @@ test('the cutoff stops torrent peers and uploads; reopening finishes the same fi
   }
 })
 
-async function openSchedule(plexo: PlexoApp): Promise<void> {
+async function openSchedule(plexo: GegeApp): Promise<void> {
   await plexo.page.getByRole('button', { name: /^\d+ networks?/ }).click()
   await plexo.page.getByRole('button', { name: 'Speed & data limits', exact: true }).click()
   await plexo.page.getByRole('region', { name: 'Download schedule' }).scrollIntoViewIfNeeded()
 }
 
-async function chooseTime(plexo: PlexoApp, label: string, time: string): Promise<void> {
+async function chooseTime(plexo: GegeApp, label: string, time: string): Promise<void> {
   const [hour, minute] = time.split(':')
   for (const [part, value] of [
     ['hour', hour],
@@ -162,7 +162,7 @@ test('schedule dialog saves, cancels edits, validates times, and restores settin
   await dialog.getByRole('button', { name: 'End date', exact: true }).click()
   const calendar = page.getByRole('dialog', { name: 'Choose end date' })
   await calendar.getByRole('button', { name: 'Go to the next month' }).click()
-  await page.screenshot({ path: '/tmp/plexo-schedule-calendar.png' })
+  await page.screenshot({ path: '/tmp/gege-schedule-calendar.png' })
   // Choose a day in the displayed month, excluding the adjacent months' trailing dates.
   await calendar
     .locator('[data-slot="calendar"] td:not([data-outside]) button')
@@ -172,13 +172,13 @@ test('schedule dialog saves, cancels edits, validates times, and restores settin
     .getByRole('button', { name: 'End date', exact: true })
     .innerText()
   await testInfo.attach('schedule-dialog.png', {
-    body: await page.screenshot({ path: '/tmp/plexo-schedule-dialog.png' }),
+    body: await page.screenshot({ path: '/tmp/gege-schedule-dialog.png' }),
     contentType: 'image/png'
   })
   await dialog.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(dialog).toBeHidden()
   await expect(indicator).toBeVisible()
-  await page.screenshot({ path: '/tmp/plexo-schedule-toolbar.png' })
+  await page.screenshot({ path: '/tmp/gege-schedule-toolbar.png' })
   await indicator.click()
   await expect(dialog.getByRole('switch', { name: 'Enable download schedule' })).toBeFocused()
   await expect(dialog.getByRole('region', { name: 'Download schedule' })).toBeInViewport()
@@ -258,7 +258,7 @@ test('an overnight schedule remains usable at the minimum window size', async ({
   await minute.fill('00')
   await minute.fill('75')
   await expect(minute).toHaveValue('00')
-  await plexo.page.screenshot({ path: '/tmp/plexo-schedule-time-dark.png' })
+  await plexo.page.screenshot({ path: '/tmp/gege-schedule-time-dark.png' })
   await expect(dialog.getByText('Next day', { exact: true })).toBeVisible()
   await dialog.getByRole('button', { name: 'Save', exact: true }).scrollIntoViewIfNeeded()
   await expect(dialog.getByRole('button', { name: 'Save', exact: true })).toBeInViewport({

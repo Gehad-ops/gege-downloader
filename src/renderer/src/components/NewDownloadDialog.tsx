@@ -150,7 +150,7 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
   // managers have long assumed. Anything else on the clipboard is left alone.
   useEffect(() => {
     if (useAppStore.getState().draftUrl) return
-    void window.plexo
+    void window.gege
       .readClipboardText()
       .then((text) => {
         const links = acceptedLinks(text)
@@ -192,7 +192,7 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
     const timer = setTimeout(async () => {
       try {
         // A list is checked by its first link; the rest are probed as each is started.
-        const result = await window.plexo.probeUrl(bulk ? bulk[0] : trimmed)
+        const result = await window.gege.probeUrl(bulk ? bulk[0] : trimmed)
         if (stale) return
         setProbe({ status: 'ready', result })
       } catch (error) {
@@ -310,13 +310,13 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
   }
 
   const handleBrowse = async (): Promise<void> => {
-    const chosen = await window.plexo.chooseDestinationFolder(destinationDir)
+    const chosen = await window.gege.chooseDestinationFolder(destinationDir)
     if (chosen) setDestinationDir(chosen)
   }
 
   // A .torrent file goes in the link field as its path; the probe reads it from there.
   const handleOpenTorrent = async (): Promise<void> => {
-    const path = await window.plexo.chooseTorrentFile()
+    const path = await window.gege.chooseTorrentFile()
     if (path) setUrl(path)
   }
 
@@ -327,7 +327,7 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
     setStarting(true)
     setStartError(null)
     try {
-      await window.plexo.resumeFromLink(link.id, resumes.id)
+      await window.gege.resumeFromLink(link.id, resumes.id)
       useAppStore.setState({ view: { name: 'download', id: resumes.id } })
       finishLink(link.id, true)
     } catch (error) {
@@ -343,9 +343,9 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
     for (const [index, target] of targets.entries()) {
       setBatchProgress({ done: index, total: targets.length })
       try {
-        const result = await window.plexo.probeUrl(target)
+        const result = await window.gege.probeUrl(target)
         if (result.kind !== 'http') continue
-        await window.plexo.startDownload({
+        await window.gege.startDownload({
           url: result.finalUrl,
           destinationDir,
           suggestedFileName: result.suggestedFileName,
@@ -400,7 +400,7 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
     setGrab({ status: 'scanning' })
     setSkippedLinks([])
     try {
-      setGrab({ status: 'ready', page: await window.plexo.extractLinks(target) })
+      setGrab({ status: 'ready', page: await window.gege.extractLinks(target) })
     } catch (error) {
       setGrab({ status: 'error', message: describeError(error) })
     }
@@ -430,7 +430,7 @@ function NewDownloadForm({ onDone }: { onDone: () => void }): React.JSX.Element 
         etag: probe.result.etag,
         lastModified: probe.result.lastModified
       }
-      const id = await window.plexo.startDownload(
+      const id = await window.gege.startDownload(
         probe.result.kind === 'torrent'
           ? {
               ...common,

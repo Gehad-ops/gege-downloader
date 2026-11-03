@@ -1,23 +1,23 @@
 import type { BrowserContext } from './types'
 
-// The extension imports this file too, so Plexo and the extension can't drift apart.
+// The extension imports this file too, so Gege Downloader and the extension can't drift apart.
 
-/** Plexo listens on the first that's free and the extension tries them all, so a port another app
+/** Gege Downloader listens on the first that's free and the extension tries them all, so a port another app
  * holds needs no setting. */
 export const BRIDGE_PORTS = [19288, 19289, 19290] as const
-/** Raised when an older extension or Plexo couldn't follow a change to /ping or /add. */
+/** Raised when an older extension or Gege Downloader couldn't follow a change to /ping or /add. */
 export const BRIDGE_API = 1
-/** The extension waits a little longer than this, and Plexo adds nothing once it has given up,
+/** The extension waits a little longer than this, and Gege Downloader adds nothing once it has given up,
  * so a download never ends up in both. */
 export const BRIDGE_DEADLINE_MS = 8000
 
 export interface BridgePing {
-  app: 'plexo'
+  app: 'gege'
   version: string
   api: number
 }
 
-/** 200 with a BridgeHandoff: Plexo will take it. 422: the browser keeps it. Never held past the
+/** 200 with a BridgeHandoff: Gege Downloader will take it. 422: the browser keeps it. Never held past the
  * deadline: Chrome stops an extension's service worker when a fetch takes over 30 s. */
 export interface BridgeAddRequest {
   url: string
@@ -28,9 +28,9 @@ export interface BridgeAddRequest {
   fileName?: string
 }
 
-/** Plexo shows the download only once POST /confirm brings this back: the extension confirms
+/** Gege Downloader shows the download only once POST /confirm brings this back: the extension confirms
  * after the browser's copy is really gone, since it can finish before it's cancelled. Unconfirmed,
- * it expires and Plexo shows nothing, so a download never ends up in both. */
+ * it expires and Gege Downloader shows nothing, so a download never ends up in both. */
 export interface BridgeHandoff {
   token: string
 }

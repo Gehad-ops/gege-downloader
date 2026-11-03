@@ -1,6 +1,6 @@
 import { TITLE_BAR_HEIGHT } from '../theme'
 
-const isMac = window.plexo.platform === 'darwin'
+const isMac = window.gege.platform === 'darwin'
 
 /** The window's title bar, the same on every OS: the mark and name at the left, on a strip the
  * window is dragged by. The OS's own controls sit over it (see main/index.ts). */
@@ -17,7 +17,7 @@ export function TitleBar(): React.JSX.Element {
           aria-hidden
           className="size-3.5 rounded-[5px] bg-[linear-gradient(135deg,var(--chart-teal),var(--chart-blue))]"
         />
-        Plexo
+        Gege Downloader
       </div>
     </div>
   )

@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { chmod, mkdir, mkdtemp, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { BLOCK, expect, PlexoApp, test } from './fixtures'
+import { BLOCK, expect, GegeApp, test } from './fixtures'
 
 // E. The disk: out of space, folders vanishing, no permission. The small volumes are real
 // filesystems (a RAM disk on macOS, tmpfs on Linux), so ENOSPC comes from the OS, not a mock.
@@ -30,7 +30,7 @@ async function smallVolume(megabytes: number): Promise<Volume | null> {
       }
     }
     if (process.platform === 'linux') {
-      const path = await mkdtemp(join(tmpdir(), 'plexo-vol-'))
+      const path = await mkdtemp(join(tmpdir(), 'gege-vol-'))
       execFileSync('sudo', [
         '-n',
         'mount',
@@ -87,7 +87,7 @@ test.describe('disk space @disk', () => {
     test.skip(!volume, 'cannot create a small volume on this machine')
     // Both metadata and destination are on the small volume; the payload must occupy only one copy.
     // Room is left for Chromium's own caches in userData, which take several MB at launch.
-    const app = new PlexoApp({
+    const app = new GegeApp({
       userData: join(volume!.path, 'userData'),
       dest: join(volume!.path, 'dest')
     })

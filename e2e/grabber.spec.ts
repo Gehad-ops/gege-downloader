@@ -1,9 +1,9 @@
-import { BLOCK, expect, test, type PlexoApp } from './fixtures'
+import { BLOCK, expect, test, type GegeApp } from './fixtures'
 
 // The LinkGrabber's journey: a link is collected (checked) without downloading, then handed to
 // New download, where the folder and networks are chosen before it starts.
 
-async function stubNativeUi(plexo: PlexoApp, destination: string): Promise<void> {
+async function stubNativeUi(plexo: GegeApp, destination: string): Promise<void> {
   await plexo.evaluateMain(({ dialog }, dest) => {
     dialog.showOpenDialog = (async () => ({ canceled: false, filePaths: [dest] })) as never
   }, destination)

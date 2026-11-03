@@ -35,7 +35,7 @@ test.describe('automatic stream count', () => {
 
   test.describe('left unanswered', () => {
     // As in the app, a request with no answer is noticed as silent before it times out.
-    test.use({ appEnv: { PLEXO_E2E_STALL_MS: '20000' } })
+    test.use({ appEnv: { GEGE_E2E_STALL_MS: '20000' } })
 
     test('a server that leaves extra connections unanswered keeps the ones it answers', async ({
       plexo,
@@ -60,7 +60,7 @@ test.describe('automatic stream count', () => {
   })
 
   test.describe('waited out', () => {
-    test.use({ appEnv: { PLEXO_E2E_SERVER_BUSY_MS: '60000' } })
+    test.use({ appEnv: { GEGE_E2E_SERVER_BUSY_MS: '60000' } })
 
     test('a server busy for everyone at first is waited out, not taken as a connection limit', async ({
       plexo,

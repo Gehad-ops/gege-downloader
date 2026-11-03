@@ -8,7 +8,7 @@ import type { Torrent } from 'webtorrent'
 import { expect, test } from './fixtures'
 import { seededBytes } from './origin'
 
-// Getting a torrent in: every way in gives the same answer, and a torrent Plexo can't save
+// Getting a torrent in: every way in gives the same answer, and a torrent Gege Downloader can't save
 // safely is refused before anything is written. Peers come from the link itself (x.pe), so no
 // tracker or DHT is involved.
 
@@ -75,7 +75,7 @@ test.describe('getting a torrent in', () => {
       'Album'
     )
     clients.push(client)
-    const path = join(await mkdtemp(join(tmpdir(), 'plexo-torrent-')), 'album.torrent')
+    const path = join(await mkdtemp(join(tmpdir(), 'gege-torrent-')), 'album.torrent')
     await writeFile(path, torrent.torrentFile)
 
     const probe = await plexo.api.probeUrl(path)
@@ -131,7 +131,7 @@ test.describe('getting a torrent in', () => {
   })
 
   test.describe('with nobody to ask', () => {
-    test.use({ appEnv: { PLEXO_E2E_MAGNET_MS: '1500' } })
+    test.use({ appEnv: { GEGE_E2E_MAGNET_MS: '1500' } })
 
     test('a magnet link nobody answers gives up', async ({ plexo }) => {
       const magnet = `magnet:?xt=urn:btih:${'ab'.repeat(20)}&dn=nothing`

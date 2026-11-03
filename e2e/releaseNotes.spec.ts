@@ -4,13 +4,13 @@ import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
 const builds = (version: string): string[] => [
-  `plexo-${version}-arm64.AppImage`,
-  `plexo-${version}-arm64.dmg`,
-  `plexo-${version}-setup.exe`,
-  `plexo-${version}-x64.dmg`,
-  `plexo-${version}-x86_64.AppImage`,
-  `plexo-${version}.aarch64.rpm`,
-  `plexo-${version}.x86_64.rpm`,
+  `gege-${version}-arm64.AppImage`,
+  `gege-${version}-arm64.dmg`,
+  `gege-${version}-setup.exe`,
+  `gege-${version}-x64.dmg`,
+  `gege-${version}-x86_64.AppImage`,
+  `gege-${version}.aarch64.rpm`,
+  `gege-${version}.x86_64.rpm`,
   `plexo_${version}_amd64.deb`,
   `plexo_${version}_arm64.deb`
 ]
@@ -18,10 +18,10 @@ const builds = (version: string): string[] => [
 /** What the app's updater reads besides the downloads (see src/main/updater.ts); the release
  * notes never list them. */
 const updateFiles = (version: string): string[] => [
-  `plexo-${version}-arm64-mac.zip`,
-  `plexo-${version}-x64-mac.zip`,
-  `plexo-${version}-arm64-mac.zip.blockmap`,
-  `plexo-${version}-setup.exe.blockmap`
+  `gege-${version}-arm64-mac.zip`,
+  `gege-${version}-x64-mac.zip`,
+  `gege-${version}-arm64-mac.zip.blockmap`,
+  `gege-${version}-setup.exe.blockmap`
 ]
 const channelFiles = ['latest.yml', 'latest-mac.yml', 'latest-linux.yml']
 
@@ -40,7 +40,7 @@ function writeChangelog(root: string, versions: string[]): void {
   }))
   writeFileSync(
     join(root, 'docs/changelog.js'),
-    `module.exports.PlexoChangelog = ${JSON.stringify(entries)}\n`
+    `module.exports.GegeChangelog = ${JSON.stringify(entries)}\n`
   )
 }
 

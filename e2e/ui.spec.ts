@@ -13,7 +13,7 @@ const SIZE = 24 * BLOCK
 
 /** The destination picker and "Reveal in Finder" go through native OS UI — replace both. */
 async function stubNativeUi(
-  plexo: import('./fixtures').PlexoApp,
+  plexo: import('./fixtures').GegeApp,
   destination: string
 ): Promise<void> {
   await plexo.evaluateMain(({ dialog, shell }, dest) => {
@@ -37,18 +37,18 @@ test('Show in Finder on a download in progress shows its staging file', async ({
   const { destinationPath } = (await plexo.api.listDownloads()).find(
     (entry) => entry.state.id === id
   )!.state
-  // The final file isn't there yet: what's on disk is `<name>.plexo`.
+  // The final file isn't there yet: what's on disk is `<name>.gege`.
   expect(await plexo.api.revealDownload(id)).toBe(true)
   expect(
     await plexo.evaluateMain(() => (globalThis as Record<string, unknown>).__revealed, null)
-  ).toEqual([`${destinationPath}.plexo`])
+  ).toEqual([`${destinationPath}.gege`])
   origin.release()
 })
 
 test.describe('a torrent through the UI', () => {
   // This journey inspects a peer row, not network reassignment. Keep one network stable;
   // routing across networks and globally unique peer IDs are checked by torrent specs/invariants.
-  test.use({ appEnv: { PLEXO_E2E_INTERFACES: interfacesEnv({ a: NETWORKS.a }) } })
+  test.use({ appEnv: { GEGE_E2E_INTERFACES: interfacesEnv({ a: NETWORKS.a }) } })
   test('choose its files, watch its peers, finish', async ({ plexo, dirs }) => {
     const swarm = await new Swarm().start()
     try {
@@ -370,7 +370,7 @@ test.describe('settings @smoke', () => {
 })
 
 test.describe('no networks', () => {
-  test.use({ appEnv: { PLEXO_E2E_INTERFACES: '' } })
+  test.use({ appEnv: { GEGE_E2E_INTERFACES: '' } })
 
   test('a network appearing makes the list ready for downloads @smoke', async ({ plexo }) => {
     await expect(plexo.page.getByText('No networks connected')).toBeVisible()
@@ -380,7 +380,7 @@ test.describe('no networks', () => {
     await expect(plexo.page.getByText('No networks connected')).toBeVisible()
     await plexo.evaluateMain(
       (_electron, value) => {
-        process.env['PLEXO_E2E_INTERFACES'] = value
+        process.env['GEGE_E2E_INTERFACES'] = value
       },
       interfacesEnv({ a: NETWORKS['a'] })
     )

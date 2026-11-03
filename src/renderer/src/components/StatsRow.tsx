@@ -65,12 +65,12 @@ function LiveSpeedCard(): React.JSX.Element {
         aria-hidden
       >
         <defs>
-          <linearGradient id="plexo-live-fill" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id="gege-live-fill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="var(--chart-teal)" stopOpacity={0.35} />
             <stop offset="1" stopColor="var(--chart-teal)" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <polygon points={area} fill="url(#plexo-live-fill)" />
+        <polygon points={area} fill="url(#gege-live-fill)" />
         <polyline
           points={line}
           fill="none"

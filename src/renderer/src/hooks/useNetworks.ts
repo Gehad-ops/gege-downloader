@@ -8,7 +8,7 @@ export function useNetworkEvents(): void {
   const receiveInterfaces = useAppStore((store) => store.receiveInterfaces)
 
   useEffect(() => {
-    const unsubscribe = window.plexo.onNetworksChanged(receiveInterfaces)
+    const unsubscribe = window.gege.onNetworksChanged(receiveInterfaces)
     void loadInterfaces()
     return unsubscribe
   }, [loadInterfaces, receiveInterfaces])
@@ -26,7 +26,7 @@ export function useNetworkUsage(active: boolean, revision = 0): Record<string, n
     if (!active) return
     let disposed = false
     const load = (): void => {
-      void window.plexo
+      void window.gege
         .networkUsage()
         .then((next) => !disposed && setUsage(next))
         .catch(() => {})

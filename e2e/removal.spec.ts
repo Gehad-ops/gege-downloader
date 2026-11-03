@@ -1,12 +1,12 @@
 import { existsSync } from 'node:fs'
 import { mkdir, readFile, rename, symlink, unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { BLOCK, expect, test, treeSha, type PlexoApp } from './fixtures'
+import { BLOCK, expect, test, treeSha, type GegeApp } from './fixtures'
 import { seededBytes } from './origin'
 import { named, Swarm, torrentFileOnDisk } from './torrentSwarm'
 
 /** Hold the actual history save, rather than relying on a quick click landing in its window. */
-async function holdHistoryWrite(plexo: PlexoApp): Promise<void> {
+async function holdHistoryWrite(plexo: GegeApp): Promise<void> {
   await plexo.evaluateMain(() => {
     const fs = process.getBuiltinModule('node:fs/promises')
     const { basename } = process.getBuiltinModule('node:path')
@@ -30,14 +30,14 @@ async function holdHistoryWrite(plexo: PlexoApp): Promise<void> {
   }, null)
 }
 
-async function releaseHistoryWrite(plexo: PlexoApp): Promise<void> {
+async function releaseHistoryWrite(plexo: GegeApp): Promise<void> {
   await plexo.evaluateMain(() => {
     const globals = globalThis as Record<string, unknown>
     if (typeof globals.__releaseHistory === 'function') globals.__releaseHistory()
   }, null)
 }
 
-async function waitForHistoryWrite(plexo: PlexoApp): Promise<void> {
+async function waitForHistoryWrite(plexo: GegeApp): Promise<void> {
   await expect
     .poll(() =>
       plexo.evaluateMain(() => (globalThis as Record<string, unknown>).__historyHeld, null)
@@ -45,7 +45,7 @@ async function waitForHistoryWrite(plexo: PlexoApp): Promise<void> {
     .toBe(true)
 }
 
-async function stubTrash(plexo: PlexoApp, destination: string): Promise<void> {
+async function stubTrash(plexo: GegeApp, destination: string): Promise<void> {
   await mkdir(destination)
   await plexo.evaluateMain(({ shell }, dest) => {
     shell.trashItem = async (path: string): Promise<void> => {
@@ -210,7 +210,7 @@ test('cleanup failure keeps an active HTTP download visible and blocks resume du
   const id = await plexo.start(origin.url(), origin.sha256)
   await reached
   const state = (await plexo.currentHttp())!
-  const staging = `${state.destinationPath}.plexo`
+  const staging = `${state.destinationPath}.gege`
   await plexo.evaluateMain((_electron, path) => {
     const fs = process.getBuiltinModule('node:fs/promises')
     const original = fs.rm

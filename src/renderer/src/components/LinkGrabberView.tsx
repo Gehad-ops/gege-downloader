@@ -129,7 +129,7 @@ export function LinkGrabberView(): React.JSX.Element {
     if (!target) return
     setStatus('Reading the page…')
     try {
-      const page = await window.plexo.extractLinks(target)
+      const page = await window.gege.extractLinks(target)
       addToGrabber(page.links.map((link) => link.url))
       setDraft('')
       setStatus(`Found ${page.links.length} links${page.title ? ` on “${page.title}”` : ''}.`)
@@ -146,7 +146,7 @@ export function LinkGrabberView(): React.JSX.Element {
     let total = 0
     for (const target of targets) {
       try {
-        const result = await window.plexo.deepResolve(target)
+        const result = await window.gege.deepResolve(target)
         if (result.links.length > 0) {
           addToGrabber(result.links.map((link) => link.url))
           total += result.links.length

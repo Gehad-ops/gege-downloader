@@ -2,10 +2,10 @@ import { expect, test } from './fixtures'
 
 test.use({
   appEnv: {
-    PLEXO_E2E_BLOCK_BYTES: String(1024 * 1024),
-    PLEXO_E2E_HEDGE_MS: '2000',
-    PLEXO_E2E_SLOW_WARMUP_MS: '5000',
-    PLEXO_E2E_SLOW_FOR_MS: '10000'
+    GEGE_E2E_BLOCK_BYTES: String(1024 * 1024),
+    GEGE_E2E_HEDGE_MS: '2000',
+    GEGE_E2E_SLOW_WARMUP_MS: '5000',
+    GEGE_E2E_SLOW_FOR_MS: '10000'
   }
 })
 

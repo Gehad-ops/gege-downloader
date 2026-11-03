@@ -1,10 +1,10 @@
 {
-  "name": "plexo",
-  "version": "1.0.0-rc.15",
-  "description": "Speed up downloads by combining multiple network connections in parallel",
+  "name": "gege-downloader",
+  "version": "1.0.0",
+  "description": "Download files and torrents faster by combining multiple network connections in parallel",
   "main": "./out/main/index.js",
-  "author": "Anmol Kapil",
-  "homepage": "https://github.com/anmolkapil/plexo",
+  "author": "Gehad-ops",
+  "homepage": "https://github.com/Gehad-ops/gege-downloader",
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -25,6 +25,7 @@
     "build:mac": "electron-vite build && electron-builder --mac",
     "build:linux": "electron-vite build && electron-builder --linux",
     "build:extension": "node extension/build.mjs",
+    "brand": "powershell -ExecutionPolicy Bypass -File scripts/make-logo.ps1",
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test --grep @smoke"
   },

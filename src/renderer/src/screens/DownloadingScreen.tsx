@@ -135,12 +135,12 @@ export const DownloadingScreen = memo(function DownloadingScreen({
   useEffect(() => {
     if (isPaused) {
       const label = isQueued ? 'Queued' : 'Paused'
-      document.title = knownSize ? `Plexo — ${label} (${percent}%)` : `Plexo — ${label}`
+      document.title = knownSize ? `Gege Downloader — ${label} (${percent}%)` : `Gege Downloader — ${label}`
     } else {
-      document.title = knownSize ? `Plexo — ${percent}%` : 'Plexo — downloading'
+      document.title = knownSize ? `Gege Downloader — ${percent}%` : 'Gege Downloader — downloading'
     }
     return () => {
-      document.title = 'Plexo'
+      document.title = 'Gege Downloader'
     }
   }, [percent, knownSize, isPaused, isQueued])
 
@@ -500,7 +500,7 @@ export const DownloadingScreen = memo(function DownloadingScreen({
                 totalBytes={wantedBytes(download)}
                 blocks={download.kind === 'http' ? download.blocks : undefined}
                 onSwitch={(enabled) =>
-                  void window.plexo.setDownloadNetwork(download.id, row.id, enabled)
+                  void window.gege.setDownloadNetwork(download.id, row.id, enabled)
                 }
               />
             ))}

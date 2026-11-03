@@ -2,19 +2,19 @@ import { useEffect } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { acceptedLinks } from '../utils/format'
 
-/** Opens New download with links handed to Plexo, for the user to look at and start. */
+/** Opens New download with links handed to Gege Downloader, for the user to look at and start. */
 export function useOpenedLinks(): void {
   const receiveLinks = useAppStore((store) => store.receiveLinks)
 
   useEffect(() => {
-    const unsubscribe = window.plexo.onLinkReceived(() => void receiveLinks())
+    const unsubscribe = window.gege.onLinkReceived(() => void receiveLinks())
     // Some may have arrived before the window was listening.
     void receiveLinks()
     return unsubscribe
   }, [receiveLinks])
 }
 
-const isMac = window.plexo.platform === 'darwin'
+const isMac = window.gege.platform === 'darwin'
 
 /** The ways into New download from anywhere in the window, as download managers have them:
  * pasting a link (outside a text field), ⌘N / Ctrl+N, and dropping a link or a .torrent. */
@@ -47,7 +47,7 @@ export function useNewDownloadShortcuts(): void {
       event.preventDefault()
       const file = event.dataTransfer?.files[0]
       if (file) {
-        if (/\.torrent$/i.test(file.name)) openNewDownload(window.plexo.pathForFile(file))
+        if (/\.torrent$/i.test(file.name)) openNewDownload(window.gege.pathForFile(file))
         return
       }
       const text = event.dataTransfer?.getData('text') ?? ''

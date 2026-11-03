@@ -21,12 +21,12 @@ const COMPLETE_ACTIONS: { value: OnDownloadComplete; label: string }[] = [
 
 const QUEUE_ACTIONS: { value: WhenQueueFinishes; label: string }[] = [
   { value: 'none', label: 'Do nothing' },
-  { value: 'quit', label: 'Quit Plexo' },
+  { value: 'quit', label: 'Quit Gege Downloader' },
   { value: 'sleep', label: 'Sleep the computer' },
   { value: 'shutdown', label: 'Shut down the computer' }
 ]
 
-/** What Plexo does on its own once downloads finish, as IDM's completion options. Sits with the
+/** What Gege Downloader does on its own once downloads finish, as IDM's completion options. Sits with the
  * other set-once choices; its icon is lit while it will do something. */
 export function CompletionMenu(): React.JSX.Element {
   const onDownloadComplete = useAppStore((store) => store.onDownloadComplete)

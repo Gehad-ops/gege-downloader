@@ -17,11 +17,11 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const require = createRequire(import.meta.url)
-const { PlexoDownloads: downloads } = require('../docs/downloads.js')
-const { PlexoChangelog: changelog } = require('../docs/changelog.js')
+const { GegeDownloads: downloads } = require('../docs/downloads.js')
+const { GegeChangelog: changelog } = require('../docs/changelog.js')
 
-const REPO = 'anmolkapil/plexo'
-const SITE = 'https://getplexo.app/'
+const REPO = 'Gehad-ops/gege-downloader'
+const SITE = 'https://github.com/Gehad-ops/gege-downloader'
 
 const [tag, arg] = process.argv.slice(2)
 if (!tag || !/^v\d/.test(tag)) {

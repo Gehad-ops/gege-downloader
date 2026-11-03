@@ -2,9 +2,9 @@ import { exec } from 'node:child_process'
 import { app } from 'electron'
 import type { WhenQueueFinishes } from '../shared/types'
 
-/** Does what the user asked once every download has finished. `quit` closes Plexo; the others ask
+/** Does what the user asked once every download has finished. `quit` closes Gege Downloader; the others ask
  * the OS to sleep or shut down, best-effort — one that fails (a container, a locked session)
- * only logs, leaving Plexo open. */
+ * only logs, leaving Gege Downloader open. */
 export function performQueueAction(action: Exclude<WhenQueueFinishes, 'none'>): void {
   if (action === 'quit') {
     app.quit()
@@ -23,6 +23,6 @@ export function performQueueAction(action: Exclude<WhenQueueFinishes, 'none'>): 
           ? 'systemctl poweroff'
           : 'systemctl suspend'
   exec(command, (error) => {
-    if (error) console.error(`[plexo] could not ${action} the computer`, error)
+    if (error) console.error(`[gege] could not ${action} the computer`, error)
   })
 }

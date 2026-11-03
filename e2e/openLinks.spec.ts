@@ -1,11 +1,11 @@
 import type { Locator } from '@playwright/test'
 import { spawn } from 'node:child_process'
 import { createRequire } from 'node:module'
-import { electronArgs, expect, PROJECT_ROOT, test, type PlexoApp } from './fixtures'
+import { electronArgs, expect, PROJECT_ROOT, test, type GegeApp } from './fixtures'
 import { seededBytes } from './origin'
 import { named, Swarm, torrentFileOnDisk } from './torrentSwarm'
 
-// Links the OS hands Plexo — a magnet link clicked in a browser, a .torrent opened from the file
+// Links the OS hands Gege Downloader — a magnet link clicked in a browser, a .torrent opened from the file
 // manager — open New download with it filled in, for the user to look at and start; nothing starts
 // on its own.
 
@@ -21,7 +21,7 @@ async function aTorrentFile(): Promise<string> {
   }
 }
 
-const linkField = (plexo: PlexoApp): Locator => plexo.page.getByRole('textbox', { name: 'Link' })
+const linkField = (plexo: GegeApp): Locator => plexo.page.getByRole('textbox', { name: 'Link' })
 
 test.describe('links handed over by the OS', () => {
   test('a .torrent on the command line (Windows, Linux) fills in the link', async ({ plexo }) => {
@@ -40,7 +40,7 @@ test.describe('links handed over by the OS', () => {
   }) => {
     const electronBinary = createRequire(__filename)('electron') as string
     const second = spawn(electronBinary, electronArgs(PROJECT_ROOT, [MAGNET]), {
-      env: { ...process.env, PLEXO_USER_DATA: plexo.dirs.userData, PLEXO_E2E_HIDE_WINDOW: '1' },
+      env: { ...process.env, GEGE_USER_DATA: plexo.dirs.userData, GEGE_E2E_HIDE_WINDOW: '1' },
       stdio: ['ignore', 'pipe', 'pipe']
     })
     const output: string[] = []

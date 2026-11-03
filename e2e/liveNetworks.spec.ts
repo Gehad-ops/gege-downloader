@@ -5,7 +5,7 @@ import {
   LAN_ADDRESS,
   NETWORKS,
   test,
-  type PlexoApp
+  type GegeApp
 } from './fixtures'
 import type { LoggedRequest } from './origin'
 import type { DownloadState } from '../src/shared/types'
@@ -13,9 +13,9 @@ import type { DownloadState } from '../src/shared/types'
 // O. Networks that come, go, and are switched on and off while a download runs.
 
 /** What the computer's networks are now, as the app will see them at its next look. */
-const setNetworks = (plexo: PlexoApp, networks: Record<string, string>): Promise<void> =>
+const setNetworks = (plexo: GegeApp, networks: Record<string, string>): Promise<void> =>
   plexo.evaluateMain((_electron, value) => {
-    process.env['PLEXO_E2E_INTERFACES'] = value
+    process.env['GEGE_E2E_INTERFACES'] = value
   }, interfacesEnv(networks))
 
 const overB = (request: Pick<LoggedRequest, 'from'>): boolean => request.from !== '127.0.0.1'
@@ -167,7 +167,7 @@ test.describe('two networks @smoke', () => {
 })
 
 test.describe('a network that can’t reach the server @smoke', () => {
-  test.use({ appEnv: { PLEXO_E2E_SILENT_MS: '500' } })
+  test.use({ appEnv: { GEGE_E2E_SILENT_MS: '500' } })
 
   test('keeps one stream trying, and gets its streams back once it is through', async ({
     plexo,
@@ -199,7 +199,7 @@ test.describe('a network that can’t reach the server @smoke', () => {
 
 test.describe('a network that changes address', () => {
   // Far longer than the test waits: a stream only retries in time if it is woken.
-  test.use({ appEnv: { PLEXO_E2E_RETRY_BASE_MS: '10000' } })
+  test.use({ appEnv: { GEGE_E2E_RETRY_BASE_MS: '10000' } })
 
   test('gets its streams going again at once, not when their backoff runs out @smoke', async ({
     plexo,
@@ -228,7 +228,7 @@ test.describe('a network that changes address', () => {
 
 test.describe('the computer wakes from sleep', () => {
   // Nothing else would notice the dead connection for a long while.
-  test.use({ appEnv: { PLEXO_E2E_STALL_MS: '60000', PLEXO_E2E_SILENT_MS: '60000' } })
+  test.use({ appEnv: { GEGE_E2E_STALL_MS: '60000', GEGE_E2E_SILENT_MS: '60000' } })
 
   test('a connection that died in its sleep is replaced at once @smoke', async ({
     plexo,

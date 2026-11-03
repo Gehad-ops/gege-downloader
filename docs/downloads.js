@@ -303,7 +303,7 @@
     return out.join('\n')
   }
 
-  root.PlexoDownloads = {
+  root.GegeDownloads = {
     describe: describe,
     detectEnvironment: detectEnvironment,
     build: build,

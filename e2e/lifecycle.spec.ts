@@ -84,7 +84,7 @@ test.describe('pause and resume @smoke', () => {
 })
 
 test.describe('pause during a retry backoff', () => {
-  test.use({ appEnv: { PLEXO_E2E_RETRY_BASE_MS: '5000' } })
+  test.use({ appEnv: { GEGE_E2E_RETRY_BASE_MS: '5000' } })
 
   test('pausing does not wait out the backoff @smoke', async ({ plexo, serve }) => {
     const origin = await serve({ size: SIZE })
@@ -112,7 +112,7 @@ test.describe('pause during a retry backoff', () => {
 test.describe('resume safety checks @smoke', () => {
   /** Starts a download, pauses it partway, and lets `change` alter the server while paused. */
   async function pauseThenChange(
-    plexo: import('./fixtures').PlexoApp,
+    plexo: import('./fixtures').GegeApp,
     origin: import('./origin').Origin,
     change: () => void
   ): Promise<{
@@ -199,7 +199,7 @@ test.describe('cancel and remove @smoke', () => {
     await reached
     await plexo.api.pauseDownload(id)
     const paused = await plexo.waitForHttpStatus('paused')
-    const staging = `${paused.destinationPath}.plexo`
+    const staging = `${paused.destinationPath}.gege`
     expect(existsSync(staging), 'pausing keeps the staging file').toBe(true)
     origin.release()
     await plexo.api.cancelDownload(id)

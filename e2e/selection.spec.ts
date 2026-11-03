@@ -16,7 +16,7 @@ async function chooseMore(page: Page, name: string | RegExp): Promise<void> {
   await page.getByRole('menuitem', { name }).click()
 }
 
-async function stubTrash(plexo: import('./fixtures').PlexoApp, destination: string): Promise<void> {
+async function stubTrash(plexo: import('./fixtures').GegeApp, destination: string): Promise<void> {
   await mkdir(destination)
   await plexo.evaluateMain(({ shell }, dest) => {
     shell.trashItem = async (path: string): Promise<void> => {

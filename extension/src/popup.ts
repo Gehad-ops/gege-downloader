@@ -1,5 +1,5 @@
 import { api } from './api'
-import { reach } from './plexo'
+import { reach } from './gege'
 import { excluded, loadSettings, saveSettings } from './settings'
 
 const element = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T
@@ -20,9 +20,9 @@ async function render(): Promise<void> {
   ])
   const [tone, text] =
     reached === 'closed'
-      ? ['', 'Plexo not open']
+      ? ['', 'Gege Downloader not open']
       : reached === 'update'
-        ? ['warn', 'Update Plexo']
+        ? ['warn', 'Update Gege Downloader']
         : settings.capture
           ? ['ok', 'Connected']
           : ['', 'Capture off']
@@ -33,7 +33,7 @@ async function render(): Promise<void> {
 
   element<HTMLInputElement>('capture').checked = settings.capture
   element('capture-hint').textContent = settings.capture
-    ? 'Downloads open in Plexo instead of the browser.'
+    ? 'Downloads open in Gege Downloader instead of the browser.'
     : 'Downloads stay in the browser.'
 
   element('site-row').hidden = host === null
@@ -46,7 +46,7 @@ async function render(): Promise<void> {
     element('site-hint').textContent = !settings.capture
       ? 'Capture is off everywhere.'
       : on
-        ? 'Downloads from this site go to Plexo.'
+        ? 'Downloads from this site go to Gege Downloader.'
         : 'Downloads from this site stay in the browser.'
   }
 }
@@ -72,11 +72,11 @@ element('grant').addEventListener('click', () => {
   void api.permissions.request(ALL_SITES).then(render)
 })
 element('open-plexo').addEventListener('click', () => {
-  void api.runtime.sendMessage({ wakePlexo: true })
+  void api.runtime.sendMessage({ wakeGege: true })
 })
 element('options').addEventListener('click', () => void api.runtime.openOptionsPage())
 
 api.storage.onChanged.addListener(() => void render())
 void render()
 // So the toolbar icon agrees with the popup now, not at its next check.
-void api.runtime.sendMessage({ checkPlexo: true }).catch(() => {})
+void api.runtime.sendMessage({ checkGege: true }).catch(() => {})

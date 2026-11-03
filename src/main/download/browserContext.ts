@@ -52,7 +52,7 @@ const UNSAFE_IN_COOKIE = /[\x00-\x1f\x7f;]/
 const isText = (value: unknown, unsafe = UNSAFE): value is string =>
   typeof value === 'string' && value.length <= MAX_TEXT && !unsafe.test(value)
 
-/** It comes from outside Plexo (the extension, or a manifest read back from disk), so only known
+/** It comes from outside Gege Downloader (the extension, or a manifest read back from disk), so only known
  * fields are kept. */
 export function browserContextFrom(value: unknown): BrowserContext | null {
   if (typeof value !== 'object' || value === null) return null

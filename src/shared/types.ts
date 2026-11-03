@@ -302,7 +302,7 @@ export interface NetworkPreference {
   off?: boolean
   /** Bytes a second all downloads together may take over it. */
   speedLimit?: number
-  /** Bytes Plexo may receive in the chosen calendar period. */
+  /** Bytes Gege Downloader may receive in the chosen calendar period. */
   dataLimit?: number
   /** Defaults to month for existing settings. Weeks start Monday in local time. */
   dataLimitPeriod?: DataLimitPeriod
@@ -334,7 +334,7 @@ export interface DownloadSchedule {
 /** What to do with each download as it finishes: nothing, open it, or show it in its folder. */
 export type OnDownloadComplete = 'none' | 'open' | 'reveal'
 
-/** What to do once every download has finished: nothing, quit Plexo, or ask the OS to sleep or
+/** What to do once every download has finished: nothing, quit Gege Downloader, or ask the OS to sleep or
  * shut down. */
 export type WhenQueueFinishes = 'none' | 'quit' | 'sleep' | 'shutdown'
 

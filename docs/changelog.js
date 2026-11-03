@@ -8,7 +8,7 @@
 ;(function (root) {
   'use strict'
 
-  root.PlexoChangelog = [
+  root.GegeChangelog = [
     {
       version: 'v1.0.0-rc.15',
       items: [

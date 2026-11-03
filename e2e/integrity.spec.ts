@@ -49,7 +49,7 @@ test('a host that ignores the range end and answers with a wider range is tolera
 })
 
 test.describe('a connection stuck at a crawl @smoke', () => {
-  test.use({ appEnv: { PLEXO_E2E_SLOW_WARMUP_MS: '500', PLEXO_E2E_SLOW_FOR_MS: '1500' } })
+  test.use({ appEnv: { GEGE_E2E_SLOW_WARMUP_MS: '500', GEGE_E2E_SLOW_FOR_MS: '1500' } })
 
   const BLOCKS = 48
   const tookFullBlock = (entry: LoggedRequest): boolean =>
@@ -132,7 +132,7 @@ test('one network dies for good mid-download; the other finishes it @smoke', asy
 })
 
 test.describe('a busy server @smoke', () => {
-  test.use({ appEnv: { PLEXO_E2E_SERVER_BUSY_MS: '60000' } })
+  test.use({ appEnv: { GEGE_E2E_SERVER_BUSY_MS: '60000' } })
 
   test('is waited out for as long as it asks, past the retries a wrong answer gets', async ({
     plexo,

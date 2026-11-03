@@ -1,0 +1,13 @@
+{
+  "name": "Gege Downloader",
+  "shortName": "Gege",
+  "appId": "com.gege.downloader",
+  "executableName": "gege-downloader",
+  "protocol": "gege",
+  "website": "https://github.com/Gehad-ops/gege-downloader",
+  "updateRepo": "Gehad-ops/gege-downloader",
+  "copyright": "Copyright © 2026 Gehad-ops",
+  "author": "Gehad-ops",
+  "description": "Download files and torrents faster by combining multiple network connections in parallel",
+  "partialSuffix": ".gege"
+}

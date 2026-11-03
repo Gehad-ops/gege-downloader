@@ -9,7 +9,7 @@ const BLOCKS = 12
 const SLOW = 3 // the block whose first request crawls
 
 test.describe('racing a slow block', () => {
-  test.use({ appEnv: { PLEXO_E2E_HEDGE_MS: '400' } })
+  test.use({ appEnv: { GEGE_E2E_HEDGE_MS: '400' } })
 
   const inSlowBlock = (range: OriginRequest['range']): boolean =>
     !!range && range.start >= SLOW * BLOCK && range.start < (SLOW + 1) * BLOCK
