@@ -24,9 +24,11 @@ module.exports = {
     '!node_modules/koffi/build/koffi/!(linux_x64|linux_arm64|win32_x64|win32_arm64)/**',
     '!node_modules/node-datachannel/**',
     '!node_modules/webrtc-polyfill/**',
-    '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+    '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}',
+    '!resources/legendary/**'
   ],
-  asarUnpack: ['resources/**'],
+  asarUnpack: ['resources/**', '!resources/legendary/**'],
+  extraResources: [{ from: 'resources/legendary', to: 'legendary' }],
   win: {
     executableName,
     target: [{ target: 'nsis', arch: ['x64'] }]
