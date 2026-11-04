@@ -138,6 +138,7 @@ function setAppMenu(): void {
  * release GitHub marks Latest. A downloaded update installs on restart, or on the next quit if
  * there isn't one. */
 export function startUpdater(window: () => BrowserWindow | null, autoUpdate: boolean): void {
+  if (process.env['GEGE_DISABLE_UPDATES'] === '1') return
   getWindow = window
   state = { ...state, autoUpdate }
   autoUpdater.autoDownload = autoUpdate
