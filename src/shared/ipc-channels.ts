@@ -39,5 +39,14 @@ export const IpcChannels = {
   dismissLink: 'app:dismiss-link',
   updateState: 'update:state',
   updateStateChanged: 'update:state-changed',
-  showUpdateMenu: 'update:show-menu'
+  showUpdateMenu: 'update:show-menu',
+  epicStatus: 'epic:status',
+  epicList: 'epic:list',
+  epicInstalled: 'epic:installed',
+  epicAuthUrl: 'epic:auth-url',
+  epicAuthCode: 'epic:auth-code',
+  epicLogout: 'epic:logout',
+  epicInstall: 'epic:install',
+  epicUninstall: 'epic:uninstall',
+  epicLaunch: 'epic:launch'
 } as const

@@ -4,6 +4,8 @@ import { NetworkBindingDialog } from './components/NetworkBindingDialog'
 import { NewDownloadDialog } from './components/NewDownloadDialog'
 import { StatusBar } from './components/StatusBar'
 import { TitleBar } from './components/TitleBar'
+import { EpicView } from './components/EpicView'
+import { useState } from 'react'
 import { TooltipProvider } from './components/ui/tooltip'
 import { useDownloadEvents } from './hooks/useDownloadEvents'
 import { useNetworkEvents } from './hooks/useNetworks'
@@ -57,18 +59,30 @@ function App(): React.JSX.Element {
   useOpenedLinks()
   useNewDownloadShortcuts()
   useNetworkEvents()
+  const [epicOpen, setEpicOpen] = useState(false)
 
   return (
     <TooltipProvider>
       <DownloadActionsProvider>
         <div className="flex h-full flex-col">
-          <TitleBar />
+          <TitleBar onEpic={() => setEpicOpen(true)} />
           <div className="min-h-0 flex-1">
             <CurrentScreen />
           </div>
           <StatusBar />
           <NewDownloadDialog />
           <NetworkBindingDialog />
+          {epicOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+              <div className="h-[80%] w-[80%] overflow-auto rounded bg-[var(--bg-secondary)] shadow-lg">
+                <div className="flex items-center justify-between border-b border-[var(--border)] px-3 py-2">
+                  <span className="font-semibold">Epic Games</span>
+                  <button onClick={() => setEpicOpen(false)}>Close</button>
+                </div>
+                <EpicView />
+              </div>
+            </div>
+          )}
         </div>
       </DownloadActionsProvider>
     </TooltipProvider>

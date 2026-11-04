@@ -1,6 +1,6 @@
 {
   "name": "gege-downloader",
-  "version": "1.0.0",
+  "version": "2.0.0-rc.1",
   "description": "Download files and torrents faster by combining multiple network connections in parallel",
   "main": "./out/main/index.js",
   "author": "Gehad-ops",
@@ -11,9 +11,7 @@
     "lint": "eslint --cache .",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
-    "typecheck:e2e": "tsc -p tsconfig.e2e.json",
-    "typecheck:extension": "tsc -p extension/tsconfig.json",
-    "typecheck": "npm run typecheck:node && npm run typecheck:web && npm run typecheck:e2e && npm run typecheck:extension",
+    "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "prestart": "install-electron",
     "start": "electron-vite preview",
     "predev": "install-electron",
@@ -24,10 +22,7 @@
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",
     "build:linux": "electron-vite build && electron-builder --linux",
-    "build:extension": "node extension/build.mjs",
-    "brand": "powershell -ExecutionPolicy Bypass -File scripts/make-logo.ps1",
-    "test:e2e": "playwright test",
-    "test:e2e:smoke": "playwright test --grep @smoke"
+    "brand": "powershell -ExecutionPolicy Bypass -File scripts/make-logo.ps1"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
