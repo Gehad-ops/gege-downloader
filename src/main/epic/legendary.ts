@@ -1,5 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process'
-import { app } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import { join } from 'node:path'
 import { existsSync, mkdirSync } from 'node:fs'
 
@@ -84,22 +84,38 @@ export async function legendaryAuthCode(code: string): Promise<{ ok: boolean; st
   return { ok: r.code === 0, stderr: r.stderr }
 }
 
-export async function legendaryAuthUrl(): Promise<string | null> {
-  // Spawn auth --disable-webview and capture the URL line.
+export function legendaryAuthUrl(): string {
+  const clientId = '34a02cf8f4414e29b15921876da36f9a'
+  const redirect = encodeURIComponent(`https://www.epicgames.com/id/api/redirect?clientId=${clientId}&responseType=code`)
+  return `https://www.epicgames.com/id/login?redirectUrl=${redirect}`
+}
+
+export async function legendaryLogin(): Promise<{ ok: boolean; username?: string; stderr?: string }> {
   return new Promise((resolve) => {
-    const child = spawn(legendaryBinary(), ['auth', '--disable-webview'], {
-      env: { ...process.env, XDG_CONFIG_HOME: legendaryConfigDir() },
-      windowsHide: true,
+    const win = new BrowserWindow({ width: 520, height: 720, title: 'Epic Games Login', autoHideMenuBar: true })
+    let settled = false
+    const finish = async (code?: string) => {
+      if (settled) return
+      settled = true
+      try { win.close() } catch { /* ignore */ }
+      if (!code) { resolve({ ok: false, stderr: 'No authorization code captured' }); return }
+      const r = await legendaryAuthCode(code)
+      if (!r.ok) { resolve({ ok: false, stderr: r.stderr }); return }
+      const s = await legendaryStatus()
+      resolve({ ok: true, username: s?.username })
+    }
+    win.webContents.on('did-navigate', async (_e, url) => {
+      if (url.includes('/id/api/redirect')) {
+        try {
+          const text = await win.webContents.executeJavaScript('document.body.innerText')
+          const parsed = JSON.parse(text)
+          const code = parsed.authorizationCode ?? parsed.code
+          await finish(code)
+        } catch { /* wait for next */ }
+      }
     })
-    let found: string | null = null
-    child.stdout?.on('data', (b: Buffer) => {
-      const s = b.toString()
-      const m = s.match(/https?:\/\/\S+/)
-      if (m && !found) { found = m[0]; child.kill(); resolve(found) }
-    })
-    child.stderr?.on('data', () => {})
-    child.on('close', () => { if (!found) resolve(null) })
-    setTimeout(() => { if (!found) { child.kill(); resolve(null) } }, 15000)
+    win.on('closed', () => { if (!settled) finish() })
+    win.loadURL(legendaryAuthUrl())
   })
 }
 

@@ -23,16 +23,10 @@ export function EpicView(): React.JSX.Element {
   useEffect(() => { void refresh() }, [])
 
   async function login(): Promise<void> {
-    setBusy(true); setMsg('Opening Epic login…')
+    setBusy(true); setMsg('Opening Epic login window…')
     try {
-      const url = await window.gege.epicAuthUrl()
-      if (!url) { setMsg('Could not get login URL'); return }
-      // Open in default browser; user pastes the code.
-      await window.gege.openDownload ? Promise.resolve() : Promise.resolve()
-      const code = window.prompt('Open this URL in your browser, log in, then paste the authorization code here:\n' + url)
-      if (!code) { setMsg('Cancelled'); return }
-      const r = await window.gege.epicAuthCode(code.trim())
-      setMsg(r.ok ? 'Logged in' : ('Login failed: ' + r.stderr))
+      const r = await window.gege.epicLogin()
+      setMsg(r.ok ? ('Logged in as ' + (r.username ?? '')) : ('Login failed: ' + (r.stderr ?? '')))
       await refresh()
     } finally { setBusy(false) }
   }

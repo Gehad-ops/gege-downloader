@@ -76,6 +76,7 @@ export interface IpcContract {
   epicList: { args: []; result: unknown[] }
   epicInstalled: { args: []; result: unknown[] }
   epicAuthUrl: { args: []; result: string | null }
+  epicLogin: { args: []; result: { ok: boolean; username?: string; stderr?: string } }
   epicAuthCode: { args: [code: string]; result: { ok: boolean; stderr: string } }
   epicLogout: { args: []; result: void }
   epicInstall: { args: [appName: string]; result: number }

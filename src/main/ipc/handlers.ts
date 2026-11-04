@@ -28,7 +28,7 @@ import { pendingLink, pendingLinks, releaseLink } from '../openLinks'
 import { NetworkMonitor } from '../network/interfaces'
 import { loadSettings, saveSettings } from '../settings'
 import { showUpdateMenu, updateState } from '../updater'
-import { legendaryStatus, legendaryList, legendaryInstalled, legendaryAuthUrl, legendaryAuthCode, legendaryLogout, legendaryInstall, legendaryUninstall, legendaryLaunch } from '../epic/legendary'
+import { legendaryStatus, legendaryList, legendaryInstalled, legendaryAuthUrl, legendaryAuthCode, legendaryLogout, legendaryInstall, legendaryUninstall, legendaryLaunch, legendaryLogin } from '../epic/legendary'
 
 async function openNetworkSettings(): Promise<void> {
   if (process.platform === 'win32') {
@@ -183,6 +183,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): Down
   handle('epicList', async () => legendaryList())
   handle('epicInstalled', async () => legendaryInstalled())
   handle('epicAuthUrl', async () => legendaryAuthUrl())
+  handle('epicLogin', async () => legendaryLogin())
   handle('epicAuthCode', async (_event, code) => legendaryAuthCode(code))
   handle('epicLogout', async () => { await legendaryLogout() })
   handle('epicInstall', async (_event, appName) => legendaryInstall(appName))

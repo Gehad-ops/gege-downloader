@@ -67,6 +67,7 @@ const gegeApi = {
   epicList: () => invoke('epicList'),
   epicInstalled: () => invoke('epicInstalled'),
   epicAuthUrl: () => invoke('epicAuthUrl'),
+  epicLogin: () => invoke('epicLogin'),
   epicAuthCode: (code: string) => invoke('epicAuthCode', code),
   epicLogout: () => invoke('epicLogout'),
   epicInstall: (appName: string) => invoke('epicInstall', appName),

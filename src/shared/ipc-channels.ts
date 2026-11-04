@@ -44,6 +44,7 @@ export const IpcChannels = {
   epicList: 'epic:list',
   epicInstalled: 'epic:installed',
   epicAuthUrl: 'epic:auth-url',
+  epicLogin: 'epic:login',
   epicAuthCode: 'epic:auth-code',
   epicLogout: 'epic:logout',
   epicInstall: 'epic:install',
