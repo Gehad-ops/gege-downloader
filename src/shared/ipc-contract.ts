@@ -72,6 +72,15 @@ export interface IpcContract {
   updateState: { args: []; result: UpdateState }
   /** The update menu, as a native menu at the pointer. */
   showUpdateMenu: { args: []; result: void }
+  epicStatus: { args: []; result: { loggedIn: boolean; username?: string } | null }
+  epicList: { args: []; result: unknown[] }
+  epicInstalled: { args: []; result: unknown[] }
+  epicAuthUrl: { args: []; result: string | null }
+  epicAuthCode: { args: [code: string]; result: { ok: boolean; stderr: string } }
+  epicLogout: { args: []; result: void }
+  epicInstall: { args: [appName: string]; result: number }
+  epicUninstall: { args: [appName: string]; result: number }
+  epicLaunch: { args: [appName: string]; result: number }
   /** Oldest first: every link not yet started or dismissed. */
   pendingLinks: { args: []; result: PendingLink[] }
   /** Resumes the failed download a link was matched to, from that link (see relinkDownload). */

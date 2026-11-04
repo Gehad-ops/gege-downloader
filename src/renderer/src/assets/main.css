@@ -103,7 +103,7 @@
   --swatch-coral: #c4572a;
   --swatch-coral-onsolid: #ffffff;
 
-  --color-accent: #0e9f8c;
+  --color-accent: #0078d7;
   --color-accent-onsolid: #ffffff;
   --color-success: #16a34a;
 
@@ -270,8 +270,8 @@
     --swatch-coral: #d99168;
     --swatch-coral-onsolid: #241209;
 
-    --color-accent: #3ddcc4;
-    --color-accent-onsolid: #06231f;
+    --color-accent: #4cc2ff;
+    --color-accent-onsolid: #000000;
     --color-success: #4ade80;
 
     --color-danger: #ff6b6b;
